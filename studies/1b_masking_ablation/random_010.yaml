@@ -1,0 +1,8 @@
+schema_version: 1
+recipe: ../../recipes/1b_meap.yaml
+study: 1b-masking-ablation
+name: random-010
+description: Randomly replace 10 percent of eligible training input tokens.
+overrides:
+  INPUT_MASK_RATIO: 0.10
+  INPUT_MASK_STRATEGY: random

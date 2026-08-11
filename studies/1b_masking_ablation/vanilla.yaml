@@ -1,0 +1,7 @@
+schema_version: 1
+recipe: ../../recipes/1b_meap.yaml
+study: 1b-masking-ablation
+name: vanilla
+description: Standard causal next-token prediction without input corruption.
+overrides:
+  INPUT_MASK_RATIO: 0.0

@@ -1,0 +1,49 @@
+schema_version: 1
+name: 1b-meap
+
+execution:
+  submission_script: /users/smehra/developer/mask-pretraining/1B-meap-config.sh
+  project_name: mask_pretraining
+  experiment_name: "{study}__{condition}"
+  checkpoint_root: "${SCRATCH}/megatron-runs/checkpoints/{project}/{experiment}"
+  artifacts_root: ../runs
+  sbatch_args:
+    - --time=02:00:00
+
+# These are the invariant settings for every condition using this recipe.
+# Conditions may override only keys declared in this mapping.
+environment:
+  DATASETS: /capstor/store/cscs/swissai/infra01/datasets/tokenized/swissai-dclm-edu-filterrobots_fine-merge/
+  MEGATRON_LM_DIR: "${SCRATCH}/Megatron-LM"
+  DATASET_CACHE_DIR: "${SCRATCH}/datasets/cache"
+  MBS: 4
+  GBS: 1024
+  SEQ_LEN: 4096
+  WARMUP_STEPS: 2000
+  PEAK_LR: 0.00001
+  MIN_LR: 0.0
+  SAVE_EVERY_TOKENS: 10000000000
+  ROLLING_CHECKPOINTS: true
+  ROLLING_SAVE_EVERY_TOKENS: 1000000000
+  COOLDOWN_STYLE: minus_sqrt
+  INPUT_MASK_RATIO: 0.0
+  INPUT_MASK_STRATEGY: random
+  INPUT_MASK_SPAN_LENGTH: 1
+  INPUT_MASK_TOKEN: <SPECIAL_999>
+  INPUT_MASK_DEBUG: false
+  INPUT_MASK_DEBUG_TOKENS: 128
+  LOG_NCCL: false
+  NSYS_PROFILER: false
+  MOCK_DATA: false
+  BACKUP_CODEBASE: false
+  RUN_CAPSTOR_DIAGNOSTICS: false
+
+stages:
+  main:
+    train_tokens: 100000000000
+  cooldown:
+    tokens: 10000000000
+    source_iterations:
+      - 2384
+      - 11920
+      - 21456
