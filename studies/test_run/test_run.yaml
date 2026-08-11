@@ -1,0 +1,11 @@
+schema_version: 1
+recipe: ../../recipes/test_run.yaml
+study: smoke-test
+name: test_run
+description: Short span-masking smoke test for the complete main and cooldown workflow.
+overrides:
+  INPUT_MASK_RATIO: 0.20
+  INPUT_MASK_STRATEGY: span
+  INPUT_MASK_SPAN_LENGTH: 2
+  INPUT_MASK_DEBUG: true
+  INPUT_MASK_DEBUG_TOKENS: 64
