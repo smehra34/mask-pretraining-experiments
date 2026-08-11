@@ -1,0 +1,65 @@
+schema_version: 1
+name: 1b-llama
+
+execution:
+  submission_script: ../submission/train_1b_llama.sh
+  project_name: mask_pretraining
+  experiment_name: "{study}__{condition}"
+  checkpoint_root: "${SCRATCH}/megatron-runs/checkpoints/{project}/{experiment}"
+  artifacts_root: ../runs
+  sbatch_args:
+    - --account=infra01
+    - --time=02:00:00
+    - --nodes=1
+    - --ntasks-per-node=1
+    - --gpus-per-node=4
+    - --cpus-per-task=72
+    - --mem=460000
+    - --no-requeue
+
+# These are the invariant settings for every condition using this recipe.
+# Conditions may override only keys declared in this mapping.
+environment:
+  DATASETS: /capstor/store/cscs/swissai/infra01/datasets/tokenized/swissai-dclm-edu-filterrobots_fine-merge/
+  MEGATRON_LM_DIR: "${SCRATCH}/Megatron-LM"
+  DATASET_CACHE_DIR: "${SCRATCH}/datasets/cache"
+  MBS: 4
+  GBS: 1024
+  SEQ_LEN: 4096
+  WARMUP_STEPS: 2000
+  PEAK_LR: 0.00001
+  MIN_LR: 0.0
+  SEED: 28
+  LOG_INTERVAL: 1
+  EVAL_INTERVAL: 100
+  EVAL_ITERS: 10
+  ATTENTION_DROPOUT: 0.0
+  HIDDEN_DROPOUT: 0.0
+  WEIGHT_DECAY: 0.1
+  SAVE_EVERY_TOKENS: 10000000000
+  ROLLING_CHECKPOINTS: true
+  ROLLING_SAVE_EVERY_TOKENS: 1000000000
+  COOLDOWN_STYLE: minus_sqrt
+  INPUT_MASK_RATIO: 0.0
+  INPUT_MASK_STRATEGY: random
+  INPUT_MASK_SPAN_LENGTH: 1
+  INPUT_MASK_TOKEN: <SPECIAL_999>
+  INPUT_MASK_DEBUG: false
+  INPUT_MASK_DEBUG_TOKENS: 128
+  LOG_NCCL: false
+  NSYS_PROFILER: false
+  MOCK_DATA: false
+  BACKUP_CODEBASE: false
+  RUN_CAPSTOR_DIAGNOSTICS: false
+
+stages:
+  main:
+    train_tokens: 100000000000
+  cooldown:
+    branches:
+      - source_iteration: 2384
+        tokens: 10000000000
+      - source_iteration: 11920
+        tokens: 10000000000
+      - source_iteration: 21456
+        tokens: 10000000000

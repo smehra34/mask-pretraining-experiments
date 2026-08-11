@@ -95,7 +95,9 @@ def cmd_submit_main(args: argparse.Namespace) -> None:
     experiment = load_experiment(args.config)
     _ensure_main_not_started(experiment.checkpoint_root)
     run_dir = create_run_record(experiment)
-    command = shell_command(experiment, experiment.main)
+    _, resolved = load_run_record(run_dir)
+    main_stage = resolved_stage(resolved, "main")
+    command = command_from_record(resolved, main_stage)
     job_id = submit(command)
     append_submission(
         run_dir, stage_key="main", job_id=job_id, command=command, action="submit-main"
@@ -152,7 +154,9 @@ def cmd_submit_all(args: argparse.Namespace) -> None:
     experiment = load_experiment(args.config)
     _ensure_main_not_started(experiment.checkpoint_root)
     run_dir = create_run_record(experiment)
-    main_command = shell_command(experiment, experiment.main)
+    _, resolved = load_run_record(run_dir)
+    main_stage = resolved_stage(resolved, "main")
+    main_command = command_from_record(resolved, main_stage)
     main_job_id = submit(main_command)
     append_submission(
         run_dir,
@@ -162,18 +166,19 @@ def cmd_submit_all(args: argparse.Namespace) -> None:
         action="submit-all",
     )
     print(f"Submitted main as job {main_job_id}")
-    for stage in experiment.cooldowns:
-        command = shell_command(experiment, stage)
+    cooldowns = [stage for stage in resolved["stages"] if stage["mode"] == "cooldown"]
+    for stage in cooldowns:
+        command = command_from_record(resolved, stage)
         job_id = submit(command, dependency=main_job_id)
         submitted_command = with_dependency(command, main_job_id)
         append_submission(
             run_dir,
-            stage_key=stage.key,
+            stage_key=stage["key"],
             job_id=job_id,
             command=submitted_command,
             action="submit-all",
         )
-        print(f"Submitted {stage.key} as dependent job {job_id}")
+        print(f"Submitted {stage['key']} as dependent job {job_id}")
     print(f"Run record: {run_dir}")
 
 

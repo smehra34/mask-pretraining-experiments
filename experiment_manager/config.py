@@ -132,6 +132,44 @@ def _validate_masking(env: dict[str, str]) -> None:
         raise ConfigError("INPUT_MASK_TOKEN is required when input masking is enabled")
 
 
+def _validate_experiment_controls(env: dict[str, str]) -> None:
+    defaults = {
+        "SEED": "28",
+        "LOG_INTERVAL": "1",
+        "EVAL_INTERVAL": "100",
+        "EVAL_ITERS": "10",
+        "ATTENTION_DROPOUT": "0.0",
+        "HIDDEN_DROPOUT": "0.0",
+        "WEIGHT_DECAY": "0.1",
+    }
+    for key in ("LOG_INTERVAL", "EVAL_INTERVAL", "EVAL_ITERS"):
+        try:
+            value = int(env.get(key, defaults[key]))
+        except ValueError as exc:
+            raise ConfigError(f"{key} must be an integer") from exc
+        if value <= 0:
+            raise ConfigError(f"{key} must be positive")
+    try:
+        seed = int(env.get("SEED", defaults["SEED"]))
+    except ValueError as exc:
+        raise ConfigError("SEED must be an integer") from exc
+    if seed < 0:
+        raise ConfigError("SEED must be non-negative")
+    for key in ("ATTENTION_DROPOUT", "HIDDEN_DROPOUT"):
+        try:
+            value = float(env.get(key, defaults[key]))
+        except ValueError as exc:
+            raise ConfigError(f"{key} must be numeric") from exc
+        if not 0.0 <= value <= 1.0:
+            raise ConfigError(f"{key} must be in [0, 1]")
+    try:
+        weight_decay = float(env.get("WEIGHT_DECAY", defaults["WEIGHT_DECAY"]))
+    except ValueError as exc:
+        raise ConfigError("WEIGHT_DECAY must be numeric") from exc
+    if weight_decay < 0.0:
+        raise ConfigError("WEIGHT_DECAY must be non-negative")
+
+
 def load_experiment(config_path: str | Path) -> ResolvedExperiment:
     """Resolve a condition YAML against its referenced base recipe."""
     config_path = Path(config_path).expanduser().resolve()
@@ -178,6 +216,7 @@ def load_experiment(config_path: str | Path) -> ResolvedExperiment:
         }
     )
     _validate_masking(env)
+    _validate_experiment_controls(env)
 
     project_name = _validate_name(execution.get("project_name"), "project name")
     name_template = str(execution.get("experiment_name", "{recipe}__{condition}"))
@@ -218,18 +257,52 @@ def load_experiment(config_path: str | Path) -> ResolvedExperiment:
     )
 
     train_tokens = _require_positive_int(main_config.get("train_tokens"), "main.train_tokens")
-    cooldown_tokens = _require_positive_int(
-        cooldown_config.get("tokens"), "cooldown.tokens"
-    )
-    source_iterations = cooldown_config.get("source_iterations")
-    if not isinstance(source_iterations, list) or not source_iterations:
-        raise ConfigError("cooldown.source_iterations must be a non-empty list")
-    source_iterations = [
-        _require_positive_int(value, "cooldown source iteration") for value in source_iterations
-    ]
+    branches_config = cooldown_config.get("branches")
+    uses_legacy_cooldown = "tokens" in cooldown_config or "source_iterations" in cooldown_config
+    if branches_config is not None and uses_legacy_cooldown:
+        raise ConfigError(
+            "cooldown must use either branches or legacy tokens/source_iterations, not both"
+        )
+    if branches_config is not None:
+        if not isinstance(branches_config, list) or not branches_config:
+            raise ConfigError("cooldown.branches must be a non-empty list")
+        branches: list[tuple[int, int]] = []
+        for index, branch in enumerate(branches_config):
+            label = f"cooldown.branches[{index}]"
+            if not isinstance(branch, dict):
+                raise ConfigError(f"{label} must be a mapping")
+            unknown_branch_keys = sorted(set(branch) - {"source_iteration", "tokens"})
+            if unknown_branch_keys:
+                raise ConfigError(
+                    f"{label} contains unknown keys: " + ", ".join(unknown_branch_keys)
+                )
+            branches.append(
+                (
+                    _require_positive_int(
+                        branch.get("source_iteration"), f"{label}.source_iteration"
+                    ),
+                    _require_positive_int(branch.get("tokens"), f"{label}.tokens"),
+                )
+            )
+    else:
+        cooldown_tokens = _require_positive_int(
+            cooldown_config.get("tokens"), "cooldown.tokens"
+        )
+        source_iterations_value = cooldown_config.get("source_iterations")
+        if not isinstance(source_iterations_value, list) or not source_iterations_value:
+            raise ConfigError("cooldown.source_iterations must be a non-empty list")
+        branches = [
+            (
+                _require_positive_int(value, "cooldown source iteration"),
+                cooldown_tokens,
+            )
+            for value in source_iterations_value
+        ]
+
+    source_iterations = [source_iteration for source_iteration, _ in branches]
     if len(source_iterations) != len(set(source_iterations)):
         raise ConfigError("cooldown source iterations must be unique")
-    source_iterations.sort()
+    branches.sort(key=lambda branch: branch[0])
 
     gbs = _require_positive_int(int(env["GBS"]), "GBS")
     seq_len = _require_positive_int(int(env["SEQ_LEN"]), "SEQ_LEN")
@@ -239,7 +312,7 @@ def load_experiment(config_path: str | Path) -> ResolvedExperiment:
     if save_interval <= 0:
         raise ConfigError("SAVE_EVERY_TOKENS rounds below one iteration")
     main_iterations = math.ceil(train_tokens / tokens_per_iteration)
-    for source_iteration in source_iterations:
+    for source_iteration, _ in branches:
         if source_iteration > main_iterations:
             raise ConfigError(
                 f"cooldown source iteration {source_iteration} exceeds main target iteration "
@@ -259,7 +332,7 @@ def load_experiment(config_path: str | Path) -> ResolvedExperiment:
     }
     main_env = {**common_env, "RUN_MODE": "main", "TRAIN_TOKENS": str(train_tokens)}
     stages = [Stage("main", "main", None, main_env)]
-    for source_iteration in source_iterations:
+    for source_iteration, cooldown_tokens in branches:
         stages.append(
             Stage(
                 key=f"cooldown-from-{source_iteration:07d}",

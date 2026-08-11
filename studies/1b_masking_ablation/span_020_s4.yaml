@@ -1,5 +1,5 @@
 schema_version: 1
-recipe: ../../recipes/1b_meap.yaml
+recipe: ../../recipes/1b_llama.yaml
 study: 1b-masking-ablation
 name: span-020-s4
 description: Replace 20 percent of eligible inputs using non-overlapping spans of four.

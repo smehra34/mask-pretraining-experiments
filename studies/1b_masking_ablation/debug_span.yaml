@@ -1,5 +1,5 @@
 schema_version: 1
-recipe: ../../recipes/1b_meap.yaml
+recipe: ../../recipes/1b_llama.yaml
 study: 1b-masking-ablation
 name: debug-span
 description: Span-masking condition with one augmented sequence printed per job.

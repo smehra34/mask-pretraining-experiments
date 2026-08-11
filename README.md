@@ -1,8 +1,8 @@
 # Mask pretraining experiment manager
 
-This is a standalone, YAML-driven layer over the existing
-`mask-pretraining/1B-meap-config.sh` submission script. It does not modify that setup. A recipe
-holds invariant model/data/stage settings; small condition files contain only ablation overrides.
+This is a self-contained, YAML-driven experiment layer. It includes its own copy of the 1B MEAP
+submission script, leaving the older `mask-pretraining` setup untouched. A recipe holds invariant
+model/data/stage settings; small condition files contain only ablation overrides.
 
 ## Layout
 
@@ -10,13 +10,14 @@ holds invariant model/data/stage settings; small condition files contain only ab
 recipes/                         fixed model, data, Slurm, main/cooldown setup
 studies/1b_masking_ablation/     one YAML file per experimental condition
 collections/                     ordered groups of conditions
+submission/                      submission scripts owned by this repository
 runs/                            generated, ignored, immutable run records
 experiment_manager/              resolver, validation, records, and Slurm interface
 mask_exp.py                      local command-line entry point
 ```
 
-The included `1b_meap` recipe defines 100B-token main runs and 10B-token cooldowns from three
-persistent checkpoint milestones. Each condition gets a distinct experiment/checkpoint name,
+The included `1b_llama` recipe defines a 100B-token main run and explicit cooldown branches from
+three persistent checkpoint milestones. Each condition gets a distinct experiment/checkpoint name,
 such as `1b-masking-ablation__span-020-s2`.
 
 ## Basic workflow
@@ -70,7 +71,7 @@ Copy a condition file and change `name`, `description`, and `overrides`:
 
 ```yaml
 schema_version: 1
-recipe: ../../recipes/1b_meap.yaml
+recipe: ../../recipes/1b_llama.yaml
 study: 1b-masking-ablation
 name: span-030-s4
 description: Replace 30 percent of eligible inputs in spans of four.
@@ -85,6 +86,51 @@ validation. `INPUT_MASK_RATIO: 0.0` is the vanilla NTP control. The recipe uses 
 `<SPECIAL_999>` token, and validation ensures mask ratios, strategies, span lengths, stage token
 counts, and cooldown checkpoint alignment are coherent.
 
+Each cooldown source has an independent token budget. For example:
+
+```yaml
+stages:
+  main:
+    train_tokens: 100000000000
+  cooldown:
+    branches:
+      - source_iteration: 2384
+        tokens: 1000000000
+      - source_iteration: 11920
+        tokens: 10000000000
+      - source_iteration: 21456
+        tokens: 20000000000
+```
+
+This launches 1B-, 10B-, and 20B-token cooldowns respectively. `source_iteration` identifies the
+exact persistent main checkpoint; `tokens` is additional training performed by that branch. The
+older shared `cooldown.tokens` plus `source_iterations` syntax remains accepted for compatibility.
+
+## Short end-to-end smoke test
+
+The isolated `test_run` setup uses the production 1B architecture and four-GPU topology, but limits
+each Slurm job to 30 minutes. It trains the main stage for 100M tokens (24 iterations), persistently
+saves approximately every 25M tokens (6 iterations), and defines 20M- and 10M-token cooldowns from
+iterations 6 and 18. It writes under the separate `mask_pretraining_test/test_run` checkpoint
+namespace and prints one augmented span-masking example per job.
+
+```bash
+export SCRATCH=/iopsstor/scratch/cscs/smehra
+/usr/bin/python3.11 mask_exp.py plan studies/test_run/test_run.yaml
+/usr/bin/python3.11 mask_exp.py submit-main studies/test_run/test_run.yaml
+```
+
+After the main job completes, use the run directory printed by `submit-main`:
+
+```bash
+/usr/bin/python3.11 mask_exp.py submit-cooldowns RUN_DIRECTORY
+```
+
+The `1b_llama` launcher intentionally fixes the architecture and distributed topology. Recipes
+control data, schedules, batch sizes, seed, logging/evaluation cadence, regularization, masking,
+checkpointing, and Slurm resources. Add another family launcher and recipe when architecture or
+topology changes. The earlier `1B-meap-config.sh` and `1b_meap.yaml` are retained for compatibility.
+
 To add another model or dataset, create another recipe rather than duplicating every condition.
 It can reference a different base submission script and declare a different environment and stage
 schedule. Conditions remain small and can opt into any variables that recipe exposes, so this
@@ -95,13 +141,16 @@ structure is not intrinsically limited to masking experiments.
 Each render creates `runs/STUDY/CONDITION/TIMESTAMP-HASH/` containing:
 
 - `resolved.yaml`: all merged values and fully materialized stages;
+- `source/`: an executable snapshot of the selected family launcher;
 - `scripts/`: executable snapshots of exact `sbatch` commands;
 - `metadata.yaml`: source paths and Git state for this manager, the submission setup, and Megatron;
 - `jobs.yaml`: append-only submission history and job IDs.
 
-Submission and resume operations use the frozen record rather than re-reading a potentially edited
-condition. Commit recipes, condition files, and manager code; keep generated `runs/` as local run
-artifacts or archive them with experiment outputs.
+Submission and resume operations use the frozen record and its launcher snapshot rather than
+re-reading a potentially edited condition or active launcher. This lets future recipes expose or
+hide parameters without changing an already rendered experiment. Commit recipes, condition files,
+and manager code; keep generated `runs/` as local run artifacts or archive them with experiment
+outputs.
 
 ## Installation and tests
 

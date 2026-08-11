@@ -24,6 +24,9 @@ class RecordTests(unittest.TestCase):
 
     def _temporary_experiment(self, directory: Path):
         recipe = yaml.safe_load((ROOT / "recipes/1b_meap.yaml").read_text())
+        recipe["execution"]["submission_script"] = str(
+            ROOT / "submission/train_1b_llama.sh"
+        )
         recipe["execution"]["artifacts_root"] = str(directory / "runs")
         recipe_path = directory / "recipe.yaml"
         recipe_path.write_text(yaml.safe_dump(recipe))
@@ -46,7 +49,7 @@ class RecordTests(unittest.TestCase):
         command = shell_command(experiment, experiment.main)
         self.assertIn("--time=02:00:00", command)
         self.assertIn(
-            "--chdir=/users/smehra/developer/mask-pretraining",
+            "--chdir=/users/smehra/developer/mask-experiment-manager/submission",
             command,
         )
         export = next(value for value in command if value.startswith("--export="))
@@ -61,9 +64,14 @@ class RecordTests(unittest.TestCase):
             self.assertTrue((run_dir / "metadata.yaml").is_file())
             self.assertTrue((run_dir / "jobs.yaml").is_file())
             self.assertTrue((run_dir / "scripts/submit-main.sh").is_file())
+            self.assertTrue((run_dir / "source/train_1b_llama.sh").is_file())
             loaded_dir, resolved = load_run_record(run_dir)
             self.assertEqual(loaded_dir, run_dir)
             self.assertEqual(resolved["condition"]["name"], "record-test")
+            self.assertEqual(
+                resolved["execution"]["submission_script"],
+                str(run_dir / "source/train_1b_llama.sh"),
+            )
 
 
 if __name__ == "__main__":

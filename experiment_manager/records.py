@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import datetime as dt
+import copy
 import json
 import os
+import shutil
 import subprocess
 from pathlib import Path
 from typing import Any
@@ -75,14 +77,30 @@ def create_run_record(experiment: ResolvedExperiment) -> Path:
         suffix += 1
     run_dir = candidate
     scripts_dir = run_dir / "scripts"
+    source_dir = run_dir / "source"
     scripts_dir.mkdir(parents=True)
+    source_dir.mkdir()
+
+    # Freeze the launcher as executable source, not merely as metadata. Resume
+    # operations therefore remain stable if a family launcher later exposes or
+    # hides parameters, changes defaults, or is renamed.
+    launcher_snapshot = source_dir / experiment.submission_script.name
+    shutil.copy2(experiment.submission_script, launcher_snapshot)
+    frozen_resolved = copy.deepcopy(experiment.resolved)
+    frozen_resolved["execution"]["original_submission_script"] = str(
+        experiment.submission_script
+    )
+    frozen_resolved["execution"]["submission_script"] = str(launcher_snapshot)
+    frozen_resolved["execution"]["working_directory"] = str(
+        experiment.submission_script.parent
+    )
 
     (run_dir / "resolved.yaml").write_text(
-        yaml.safe_dump(experiment.resolved, sort_keys=False, width=120)
+        yaml.safe_dump(frozen_resolved, sort_keys=False, width=120)
     )
-    for stage in experiment.stages:
-        path = scripts_dir / f"submit-{stage.key}.sh"
-        path.write_text(_shell_script(shell_command(experiment, stage)))
+    for stage in frozen_resolved["stages"]:
+        path = scripts_dir / f"submit-{stage['key']}.sh"
+        path.write_text(_shell_script(command_from_record(frozen_resolved, stage)))
         path.chmod(0o755)
 
     manager_root = Path(__file__).resolve().parents[1]
@@ -158,13 +176,17 @@ def command_from_record(resolved: dict[str, Any], stage: dict[str, Any]) -> list
     exports = ["ALL"] + [
         f"{key}={value}" for key, value in sorted(stage["environment"].items())
     ]
+    submission_script = Path(resolved["execution"]["submission_script"])
+    working_directory = resolved["execution"].get(
+        "working_directory", str(submission_script.parent)
+    )
     return [
         "sbatch",
         *resolved["execution"].get("sbatch_args", []),
-        f"--chdir={Path(resolved['execution']['submission_script']).parent}",
+        f"--chdir={working_directory}",
         f"--job-name={resolved['execution']['experiment_name']}--{stage['key']}",
         f"--export={','.join(exports)}",
-        resolved["execution"]["submission_script"],
+        str(submission_script),
     ]
 
 
