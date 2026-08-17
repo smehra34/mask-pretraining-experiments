@@ -1,8 +1,5 @@
 #!/bin/bash
 
-#SBATCH --output=slurmlogs/%x-%j.out
-#SBATCH --error=slurmlogs/%x-%j.err
-
 # This launcher defines the fixed 1B Llama-family architecture and distributed
 # topology. Recipes supply ordinary experimental, data, schedule, logging, and
 # Slurm variation. Create another family launcher for architectural changes.
@@ -21,7 +18,8 @@ TRAIN_TOKENS=${TRAIN_TOKENS:-}
 SOURCE_ITER=${SOURCE_ITER:-}
 COOLDOWN_TOKENS=${COOLDOWN_TOKENS:-}
 
-DATASETS=${DATASETS:-/capstor/store/cscs/swissai/infra01/datasets/tokenized/swissai-dclm-edu-filterrobots_fine-merge/}
+DATASETS=${DATASETS:-/iopsstor/scratch/cscs/smehra/tokenized_datasets/dclm-edu__mistral-7b-v0.3}
+TOKENIZER_MODEL=${TOKENIZER_MODEL:-mistralai/Mistral-7B-v0.3}
 MBS=${MBS:-4}
 GBS=${GBS:-1024}
 SEQ_LEN=${SEQ_LEN:-4096}
@@ -38,13 +36,18 @@ WEIGHT_DECAY=${WEIGHT_DECAY:-0.1}
 INPUT_MASK_RATIO=${INPUT_MASK_RATIO:-0.0}
 INPUT_MASK_STRATEGY=${INPUT_MASK_STRATEGY:-random}
 INPUT_MASK_SPAN_LENGTH=${INPUT_MASK_SPAN_LENGTH:-1}
-INPUT_MASK_TOKEN=${INPUT_MASK_TOKEN:-<SPECIAL_999>}
+INPUT_MASK_TOKEN=${INPUT_MASK_TOKEN:-[control_768]}
 INPUT_MASK_DEBUG=${INPUT_MASK_DEBUG:-false}
 INPUT_MASK_DEBUG_TOKENS=${INPUT_MASK_DEBUG_TOKENS:-128}
 SAVE_EVERY_TOKENS=${SAVE_EVERY_TOKENS:-10000000000}
 ROLLING_CHECKPOINTS=${ROLLING_CHECKPOINTS:-true}
 ROLLING_SAVE_EVERY_TOKENS=${ROLLING_SAVE_EVERY_TOKENS:-}
 COOLDOWN_STYLE=${COOLDOWN_STYLE:-minus_sqrt}
+EXTENSION_COOLDOWN_STEPS=${EXTENSION_COOLDOWN_STEPS:-100}
+SOURCE_CHECKPOINT_DIR=${SOURCE_CHECKPOINT_DIR:-}
+CP_SIZE=${CP_SIZE:-1}
+CP_COMM_TYPE=${CP_COMM_TYPE:-p2p}
+ROTARY_BASE=${ROTARY_BASE:-500000}
 
 AUTO_JOB_REQUEUE=${AUTO_JOB_REQUEUE:-false}
 LOG_NCCL=${LOG_NCCL:-false}
@@ -53,13 +56,19 @@ MOCK_DATA=${MOCK_DATA:-false}
 BACKUP_CODEBASE=${BACKUP_CODEBASE:-false}
 RUN_CAPSTOR_DIAGNOSTICS=${RUN_CAPSTOR_DIAGNOSTICS:-false}
 
-MEGATRON_LM_DIR=${MEGATRON_LM_DIR:-/iopsstor/scratch/cscs/$USER/Megatron-LM}
+MEGATRON_LM_DIR=${MEGATRON_LM_DIR:-/users/smehra/developer/Megatron-LM}
 DATASET_CACHE_DIR=${DATASET_CACHE_DIR:-/iopsstor/scratch/cscs/$USER/datasets/cache}
 PROJECT_NAME=${PROJECT_NAME:-mask_pretraining}
 EXP_NAME=${EXP_NAME:-llama_1b_wsd}
-PROJECT_DIR=$MEGATRON_LM_DIR/logs/Meg-Runs/$PROJECT_NAME/$EXP_NAME
-CHECKPOINT_ROOT=${CHECKPOINT_ROOT:-$SCRATCH/megatron-runs/checkpoints/$PROJECT_NAME/$EXP_NAME}
+EXPERIMENT_ARTIFACTS_DIR=${EXPERIMENT_ARTIFACTS_DIR:?The experiment manager must provide EXPERIMENT_ARTIFACTS_DIR}
+CHECKPOINT_STORAGE_ROOT=${CHECKPOINT_STORAGE_ROOT:-/capstor/scratch/cscs/$USER/megatron-runs}
+CHECKPOINT_ROOT=${CHECKPOINT_ROOT:-$CHECKPOINT_STORAGE_ROOT/checkpoints/$PROJECT_NAME/$EXP_NAME}
 MAIN_CKPT_DIR=$CHECKPOINT_ROOT/main
+
+# Establish the composite default layout before creating any experiment/run
+# descendants, so checkpoint and W&B files inherit the intended striping.
+mkdir -p "$CHECKPOINT_STORAGE_ROOT"
+lfs setstripe --component-end 4M --stripe-count 1 --component-end 64M --stripe-count 4 --component-end -1 --stripe-count 32 --stripe-size 4M "$CHECKPOINT_STORAGE_ROOT"
 
 ceil_div() { echo $(( ($1 + $2 - 1) / $2 )); }
 round_div() { echo $(( ($1 + $2 / 2) / $2 )); }
@@ -137,18 +146,57 @@ case "$RUN_MODE" in
       --override-opt-param-scheduler
     )
     ;;
+  extension)
+    : "${TRAIN_TOKENS:?Set TRAIN_TOKENS to the extension token budget}"
+    : "${SOURCE_CHECKPOINT_DIR:?Set SOURCE_CHECKPOINT_DIR to the base checkpoint root}"
+    [[ -f $SOURCE_CHECKPOINT_DIR/latest_checkpointed_iteration.txt ]] || {
+      echo "Missing checkpoint tracker: $SOURCE_CHECKPOINT_DIR/latest_checkpointed_iteration.txt" >&2
+      exit 2
+    }
+    TRAIN_SAMPLES=$(ceil_div "$TRAIN_TOKENS" "$SEQ_LEN")
+    EXTENSION_STEPS=$(ceil_div "$TRAIN_SAMPLES" "$GBS")
+    (( WARMUP_STEPS > 0 && WARMUP_STEPS < EXTENSION_STEPS )) || {
+      echo "WARMUP_STEPS must be positive and below extension steps ($EXTENSION_STEPS)" >&2
+      exit 2
+    }
+    (( EXTENSION_COOLDOWN_STEPS > 0 && WARMUP_STEPS + EXTENSION_COOLDOWN_STEPS < EXTENSION_STEPS )) || {
+      echo "Extension warmup + cooldown must leave a non-empty stable phase" >&2
+      exit 2
+    }
+    SAVE_DIR=$MAIN_CKPT_DIR
+    RUN_NAME=${EXP_NAME}-extension
+    if [[ -f $SAVE_DIR/latest_checkpointed_iteration.txt ]]; then
+      LOAD_DIR=$SAVE_DIR
+      EXTENSION_LOAD_ARGS=()
+    else
+      LOAD_DIR=$SOURCE_CHECKPOINT_DIR
+      EXTENSION_LOAD_ARGS=(--reset-training-progress)
+    fi
+    LR_ARGS=(
+      --lr "$PEAK_LR" --min-lr "$MIN_LR"
+      --lr-decay-style WSD
+      --lr-decay-samples "$TRAIN_SAMPLES"
+      --lr-wsd-decay-style "$COOLDOWN_STYLE"
+      --lr-wsd-decay-samples $((EXTENSION_COOLDOWN_STEPS * GBS))
+      --lr-warmup-samples $((WARMUP_STEPS * GBS))
+      --override-opt-param-scheduler
+      "${EXTENSION_LOAD_ARGS[@]}"
+    )
+    ;;
   *)
     echo "RUN_MODE must be 'main' or 'cooldown', got: $RUN_MODE" >&2
     exit 2
     ;;
 esac
 
-LOGGING_DIR=$PROJECT_DIR/$RUN_NAME/logging
+LOGGING_DIR=$EXPERIMENT_ARTIFACTS_DIR/logging
 TENSORBOARD_DIR=$LOGGING_DIR/tensorboard
-TRIGGER_DIR=$PROJECT_DIR/$RUN_NAME/triggers
-DEBUG_DIR=$PROJECT_DIR/$RUN_NAME/debug/$SLURM_JOB_ID
-BACKUP_CODEBASE_DIR=$PROJECT_DIR/$RUN_NAME/Megatron-LM
-mkdir -p "$SAVE_DIR" "$LOGGING_DIR" "$TRIGGER_DIR" "$DEBUG_DIR" slurmlogs
+TRIGGER_DIR=$EXPERIMENT_ARTIFACTS_DIR/triggers
+DEBUG_DIR=$EXPERIMENT_ARTIFACTS_DIR/debug/$SLURM_JOB_ID
+BACKUP_CODEBASE_DIR=$EXPERIMENT_ARTIFACTS_DIR/source/Megatron-LM
+WANDB_DIR=$CHECKPOINT_ROOT/wandb/$RUN_NAME
+
+mkdir -p "$SAVE_DIR" "$LOGGING_DIR" "$TRIGGER_DIR" "$DEBUG_DIR" "$WANDB_DIR"
 
 echo "Mode: $RUN_MODE"
 echo "Training target: $TRAIN_SAMPLES samples ($((TRAIN_SAMPLES * SEQ_LEN)) tokens)"
@@ -202,30 +250,38 @@ export PYTHONPATH=$MEGATRON_LM_DIR:${PYTHONPATH:-}
 
 TRANSFORMER_ENGINE_ARGS=(
   --transformer-impl transformer_engine
+  # Require Transformer Engine's FlashAttention backend instead of allowing
+  # the default "auto" selection to fall back to fused or unfused attention.
+  --attention-backend flash
   # --use-precision-aware-optimizer
   # --main-grads-dtype bf16
 )
 
 NETWORK_SIZE_ARGS=(
-  # Fixed 1b_llama model-family definition.
-  --num-layers 16
+  # MEAP 1.1B architecture. The paper's prose gives 24 layers and 32 heads;
+  # Table 12 appears to transpose those two values (2048 is not divisible by 24).
+  --num-layers 24
   --hidden-size 2048
-  --ffn-hidden-size 8192
+  --ffn-hidden-size 5632
   --num-attention-heads 32
   --group-query-attention
-  --num-query-groups 8
+  # The released tiny_LLaMA_1b_mask config uses two KV/query groups.
+  --num-query-groups 2
   --max-position-embeddings "$SEQ_LEN"
   --position-embedding-type rope
-  --rotary-base 500000
-  --rope-scaling-factor 1
+  --rotary-base "$ROTARY_BASE"
+  --rotary-percent 1.0
   --make-vocab-size-divisible-by 128
   --normalization RMSNorm
+  --norm-epsilon 1e-5
   --swiglu
+  # The released model instantiates independent token-embedding and LM-head
+  # matrices rather than tying their weights.
+  --untie-embeddings-and-output-weights
 )
 
 LOGGING_ARGS=(
   --log-throughput
-  --log-progress
   --tensorboard-dir "$TENSORBOARD_DIR"
   --log-timers-to-tensorboard
   --no-log-loss-scale-to-tensorboard
@@ -260,7 +316,8 @@ TRAINING_ARGS=(
 
 INITIALIZATION_ARGS=(
   --seed "$SEED"
-  --init-method-std 0.011
+  # sqrt(2 / 5 / hidden_size), matching MEAP's base Linear/Embedding init.
+  --init-method-std 0.013975424859373685
 )
 
 LEARNING_RATE_ARGS=("${LR_ARGS[@]}")
@@ -287,7 +344,8 @@ DISTRIBUTED_ARGS=(
   # Fixed topology for this model-family launcher.
   --tensor-model-parallel-size 1
   --pipeline-model-parallel-size 1
-  --context-parallel-size 1
+  --context-parallel-size "$CP_SIZE"
+  --cp-comm-type "$CP_COMM_TYPE"
   --use-distributed-optimizer
   --overlap-grad-reduce
   --overlap-param-gather
@@ -295,7 +353,7 @@ DISTRIBUTED_ARGS=(
 
 TOKENIZER_ARGS=(
   --tokenizer-type HuggingFaceTokenizer
-  --tokenizer-model swiss-ai/Apertus-8B-2509
+  --tokenizer-model "$TOKENIZER_MODEL"
 )
 
 DATA_ARGS=(
@@ -340,8 +398,12 @@ TORCHRUN_ARGS=(
 
 WANDB_ARGS=()
 if [[ -n ${WANDB_API_KEY:-} ]]; then
+  export WANDB_DIR
+  export WANDB_DATA_DIR=$WANDB_DIR/data
+  export WANDB_ARTIFACT_DIR=$WANDB_DIR/artifacts
+  mkdir -p "$WANDB_DATA_DIR" "$WANDB_ARTIFACT_DIR"
   WANDB_ARGS=(
-    --wandb-save-dir "$LOGGING_DIR"
+    --wandb-save-dir "$WANDB_DIR"
     --wandb-project "$PROJECT_NAME"
     --wandb-exp-name "$RUN_NAME-$SLURM_JOB_ID"
   )
@@ -356,11 +418,12 @@ if [[ $LOG_NCCL == true ]]; then
 fi
 
 if [[ $RUN_CAPSTOR_DIAGNOSTICS == true && $MOCK_DATA != true ]]; then
-  ls "$DATASETS/dump-20-merged.bin" \
-    && echo "CAPSTOR ACCESS OK FROM SUBMISSION NODE" \
-    || echo "CANNOT ACCESS DATASET FROM SUBMISSION NODE"
+  FIRST_DATA_BIN=$(find "$DATASETS" -type f -name '*.bin' -print -quit)
+  [[ -n $FIRST_DATA_BIN && -f ${FIRST_DATA_BIN%.bin}.idx ]] \
+    && echo "CAPSTOR DATASET PAIR OK FROM SUBMISSION NODE: $FIRST_DATA_BIN" \
+    || echo "CANNOT FIND A COMPLETE DATASET PAIR FROM SUBMISSION NODE"
   srun --environment=test-env bash -c \
-    "ls '$DATASETS/dump-0-merged.bin' && echo 'CAPSTOR FILE OK' || echo 'CAPSTOR FILE FAILED'"
+    "find '$DATASETS' -type f -name '*.bin' -print -quit | grep -q . && echo 'CAPSTOR DATASET OK' || echo 'CAPSTOR DATASET FAILED'"
 fi
 
 printf 'Training command:'

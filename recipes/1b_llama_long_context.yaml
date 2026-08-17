@@ -1,0 +1,68 @@
+schema_version: 1
+name: 1b-llama-long-context
+
+execution:
+  submission_script: ../submission/train_1b_llama.sh
+  project_name: mask_pretraining_long_context
+  experiment_name: "{study}__{condition}"
+  checkpoint_root: "/capstor/scratch/cscs/smehra/megatron-runs/checkpoints/{project}/{experiment}"
+  artifacts_root: ../runs
+  sbatch_args:
+    - --account=infra01
+    - --time=24:00:00
+    - --nodes=1
+    - --ntasks-per-node=1
+    - --gpus-per-node=8
+    - --cpus-per-task=72
+    - --mem=460000
+    - --no-requeue
+
+# This recipe is a new, self-contained WSD phase loaded from a stable-phase
+# base checkpoint. The first launch preserves model, optimizer, and RNG state
+# while resetting iteration/sample/LR-scheduler progress. Resumes restore the
+# extension checkpoint normally.
+environment:
+  DATASETS: /iopsstor/scratch/cscs/smehra/tokenized_datasets/dclm-edu__mistral-7b-v0.3
+  TOKENIZER_MODEL: mistralai/Mistral-7B-v0.3
+  MEGATRON_LM_DIR: /users/smehra/developer/Megatron-LM
+  DATASET_CACHE_DIR: "${SCRATCH}/datasets/cache-long-context-64k"
+  SOURCE_CHECKPOINT_DIR: "/capstor/scratch/cscs/smehra/megatron-runs/checkpoints/mask_pretraining/REPLACE_WITH_BASE_EXPERIMENT/main"
+  CHECKPOINT_STORAGE_ROOT: /capstor/scratch/cscs/smehra/megatron-runs
+  MBS: 1
+  GBS: 64
+  SEQ_LEN: 65536
+  # MEAP extends its 4K models to 64K with modified RoPE at theta_base=640K.
+  ROTARY_BASE: 640000
+  CP_SIZE: 8
+  CP_COMM_TYPE: p2p
+  WARMUP_STEPS: 50
+  EXTENSION_COOLDOWN_STEPS: 100
+  PEAK_LR: 0.00001
+  MIN_LR: 0.0
+  COOLDOWN_STYLE: minus_sqrt
+  SEED: 28
+  LOG_INTERVAL: 1
+  EVAL_INTERVAL: 50
+  EVAL_ITERS: 5
+  ATTENTION_DROPOUT: 0.0
+  HIDDEN_DROPOUT: 0.0
+  WEIGHT_DECAY: 0.1
+  SAVE_EVERY_TOKENS: 500000000
+  ROLLING_CHECKPOINTS: true
+  ROLLING_SAVE_EVERY_TOKENS: 100000000
+  INPUT_MASK_RATIO: 0.0
+  INPUT_MASK_STRATEGY: random
+  INPUT_MASK_SPAN_LENGTH: 1
+  INPUT_MASK_TOKEN: "[control_768]"
+  INPUT_MASK_DEBUG: false
+  INPUT_MASK_DEBUG_TOKENS: 128
+  LOG_NCCL: false
+  NSYS_PROFILER: false
+  MOCK_DATA: false
+  BACKUP_CODEBASE: false
+  RUN_CAPSTOR_DIAGNOSTICS: false
+
+stages:
+  main:
+    mode: extension
+    train_tokens: 4000000000

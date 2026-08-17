@@ -23,7 +23,7 @@ class RecordTests(unittest.TestCase):
         self.addCleanup(self.environment.stop)
 
     def _temporary_experiment(self, directory: Path):
-        recipe = yaml.safe_load((ROOT / "recipes/1b_meap.yaml").read_text())
+        recipe = yaml.safe_load((ROOT / "recipes/1b_llama.yaml").read_text())
         recipe["execution"]["submission_script"] = str(
             ROOT / "submission/train_1b_llama.sh"
         )
@@ -54,7 +54,7 @@ class RecordTests(unittest.TestCase):
         )
         export = next(value for value in command if value.startswith("--export="))
         self.assertIn("RUN_MODE=main", export)
-        self.assertIn("INPUT_MASK_TOKEN=<SPECIAL_999>", export)
+        self.assertIn("INPUT_MASK_TOKEN=[control_768]", export)
 
     def test_render_creates_complete_immutable_record(self) -> None:
         with tempfile.TemporaryDirectory() as directory_value:
@@ -65,6 +65,7 @@ class RecordTests(unittest.TestCase):
             self.assertTrue((run_dir / "jobs.yaml").is_file())
             self.assertTrue((run_dir / "scripts/submit-main.sh").is_file())
             self.assertTrue((run_dir / "source/train_1b_llama.sh").is_file())
+            self.assertTrue((run_dir / "stages/main/slurm").is_dir())
             loaded_dir, resolved = load_run_record(run_dir)
             self.assertEqual(loaded_dir, run_dir)
             self.assertEqual(resolved["condition"]["name"], "record-test")
@@ -72,6 +73,14 @@ class RecordTests(unittest.TestCase):
                 resolved["execution"]["submission_script"],
                 str(run_dir / "source/train_1b_llama.sh"),
             )
+            main = resolved["stages"][0]
+            self.assertEqual(
+                main["environment"]["EXPERIMENT_ARTIFACTS_DIR"],
+                str(run_dir / "stages/main"),
+            )
+            submit_script = (run_dir / "scripts/submit-main.sh").read_text()
+            self.assertIn(str(run_dir / "stages/main/slurm/%x-%j.out"), submit_script)
+            self.assertIn(str(run_dir / "stages/main/slurm/%x-%j.err"), submit_script)
 
 
 if __name__ == "__main__":

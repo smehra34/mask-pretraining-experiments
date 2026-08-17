@@ -1,11 +1,7 @@
 #!/bin/bash
 
-#SBATCH --output=slurmlogs/%x-%j.out
-#SBATCH --error=slurmlogs/%x-%j.err
-
-# Smoke-test copy of the 1b_llama launcher. It deliberately retains the exact
-# production architecture and distributed topology while its recipe supplies a
-# much shorter schedule and isolated output namespace.
+# Legacy standalone smoke launcher retained for reference. The active smoke
+# recipe invokes train_1b_llama.sh directly so it cannot drift from production.
 #
 # This launcher defines the fixed 1B Llama-family architecture and distributed
 # topology. Recipes supply ordinary experimental, data, schedule, logging, and
@@ -25,7 +21,8 @@ TRAIN_TOKENS=${TRAIN_TOKENS:-}
 SOURCE_ITER=${SOURCE_ITER:-}
 COOLDOWN_TOKENS=${COOLDOWN_TOKENS:-}
 
-DATASETS=${DATASETS:-/capstor/store/cscs/swissai/infra01/datasets/tokenized/swissai-dclm-edu-filterrobots_fine-merge/}
+DATASETS=${DATASETS:-/iopsstor/scratch/cscs/smehra/tokenized_datasets/dclm-edu__mistral-7b-v0.3}
+TOKENIZER_MODEL=${TOKENIZER_MODEL:-mistralai/Mistral-7B-v0.3}
 MBS=${MBS:-4}
 GBS=${GBS:-1024}
 SEQ_LEN=${SEQ_LEN:-4096}
@@ -42,7 +39,7 @@ WEIGHT_DECAY=${WEIGHT_DECAY:-0.1}
 INPUT_MASK_RATIO=${INPUT_MASK_RATIO:-0.0}
 INPUT_MASK_STRATEGY=${INPUT_MASK_STRATEGY:-random}
 INPUT_MASK_SPAN_LENGTH=${INPUT_MASK_SPAN_LENGTH:-1}
-INPUT_MASK_TOKEN=${INPUT_MASK_TOKEN:-<SPECIAL_999>}
+INPUT_MASK_TOKEN=${INPUT_MASK_TOKEN:-[control_768]}
 INPUT_MASK_DEBUG=${INPUT_MASK_DEBUG:-false}
 INPUT_MASK_DEBUG_TOKENS=${INPUT_MASK_DEBUG_TOKENS:-128}
 SAVE_EVERY_TOKENS=${SAVE_EVERY_TOKENS:-10000000000}
@@ -57,13 +54,17 @@ MOCK_DATA=${MOCK_DATA:-false}
 BACKUP_CODEBASE=${BACKUP_CODEBASE:-false}
 RUN_CAPSTOR_DIAGNOSTICS=${RUN_CAPSTOR_DIAGNOSTICS:-false}
 
-MEGATRON_LM_DIR=${MEGATRON_LM_DIR:-/iopsstor/scratch/cscs/$USER/Megatron-LM}
+MEGATRON_LM_DIR=${MEGATRON_LM_DIR:-/users/smehra/developer/Megatron-LM}
 DATASET_CACHE_DIR=${DATASET_CACHE_DIR:-/iopsstor/scratch/cscs/$USER/datasets/cache}
 PROJECT_NAME=${PROJECT_NAME:-mask_pretraining}
 EXP_NAME=${EXP_NAME:-llama_1b_wsd}
-PROJECT_DIR=$MEGATRON_LM_DIR/logs/Meg-Runs/$PROJECT_NAME/$EXP_NAME
-CHECKPOINT_ROOT=${CHECKPOINT_ROOT:-$SCRATCH/megatron-runs/checkpoints/$PROJECT_NAME/$EXP_NAME}
+EXPERIMENT_ARTIFACTS_DIR=${EXPERIMENT_ARTIFACTS_DIR:?The experiment manager must provide EXPERIMENT_ARTIFACTS_DIR}
+CHECKPOINT_STORAGE_ROOT=${CHECKPOINT_STORAGE_ROOT:-/capstor/scratch/cscs/$USER/megatron-runs}
+CHECKPOINT_ROOT=${CHECKPOINT_ROOT:-$CHECKPOINT_STORAGE_ROOT/checkpoints/$PROJECT_NAME/$EXP_NAME}
 MAIN_CKPT_DIR=$CHECKPOINT_ROOT/main
+
+mkdir -p "$CHECKPOINT_STORAGE_ROOT"
+lfs setstripe --component-end 4M --stripe-count 1 --component-end 64M --stripe-count 4 --component-end -1 --stripe-count 32 --stripe-size 4M "$CHECKPOINT_STORAGE_ROOT"
 
 ceil_div() { echo $(( ($1 + $2 - 1) / $2 )); }
 round_div() { echo $(( ($1 + $2 / 2) / $2 )); }
@@ -147,12 +148,14 @@ case "$RUN_MODE" in
     ;;
 esac
 
-LOGGING_DIR=$PROJECT_DIR/$RUN_NAME/logging
+LOGGING_DIR=$EXPERIMENT_ARTIFACTS_DIR/logging
 TENSORBOARD_DIR=$LOGGING_DIR/tensorboard
-TRIGGER_DIR=$PROJECT_DIR/$RUN_NAME/triggers
-DEBUG_DIR=$PROJECT_DIR/$RUN_NAME/debug/$SLURM_JOB_ID
-BACKUP_CODEBASE_DIR=$PROJECT_DIR/$RUN_NAME/Megatron-LM
-mkdir -p "$SAVE_DIR" "$LOGGING_DIR" "$TRIGGER_DIR" "$DEBUG_DIR" slurmlogs
+TRIGGER_DIR=$EXPERIMENT_ARTIFACTS_DIR/triggers
+DEBUG_DIR=$EXPERIMENT_ARTIFACTS_DIR/debug/$SLURM_JOB_ID
+BACKUP_CODEBASE_DIR=$EXPERIMENT_ARTIFACTS_DIR/source/Megatron-LM
+WANDB_DIR=$CHECKPOINT_ROOT/wandb/$RUN_NAME
+
+mkdir -p "$SAVE_DIR" "$LOGGING_DIR" "$TRIGGER_DIR" "$DEBUG_DIR" "$WANDB_DIR"
 
 echo "Mode: $RUN_MODE"
 echo "Training target: $TRAIN_SAMPLES samples ($((TRAIN_SAMPLES * SEQ_LEN)) tokens)"
@@ -229,7 +232,6 @@ NETWORK_SIZE_ARGS=(
 
 LOGGING_ARGS=(
   --log-throughput
-  --log-progress
   --tensorboard-dir "$TENSORBOARD_DIR"
   --log-timers-to-tensorboard
   --no-log-loss-scale-to-tensorboard
@@ -299,7 +301,7 @@ DISTRIBUTED_ARGS=(
 
 TOKENIZER_ARGS=(
   --tokenizer-type HuggingFaceTokenizer
-  --tokenizer-model swiss-ai/Apertus-8B-2509
+  --tokenizer-model "$TOKENIZER_MODEL"
 )
 
 DATA_ARGS=(
@@ -344,8 +346,12 @@ TORCHRUN_ARGS=(
 
 WANDB_ARGS=()
 if [[ -n ${WANDB_API_KEY:-} ]]; then
+  export WANDB_DIR
+  export WANDB_DATA_DIR=$WANDB_DIR/data
+  export WANDB_ARTIFACT_DIR=$WANDB_DIR/artifacts
+  mkdir -p "$WANDB_DATA_DIR" "$WANDB_ARTIFACT_DIR"
   WANDB_ARGS=(
-    --wandb-save-dir "$LOGGING_DIR"
+    --wandb-save-dir "$WANDB_DIR"
     --wandb-project "$PROJECT_NAME"
     --wandb-exp-name "$RUN_NAME-$SLURM_JOB_ID"
   )
@@ -360,11 +366,12 @@ if [[ $LOG_NCCL == true ]]; then
 fi
 
 if [[ $RUN_CAPSTOR_DIAGNOSTICS == true && $MOCK_DATA != true ]]; then
-  ls "$DATASETS/dump-20-merged.bin" \
-    && echo "CAPSTOR ACCESS OK FROM SUBMISSION NODE" \
-    || echo "CANNOT ACCESS DATASET FROM SUBMISSION NODE"
+  FIRST_DATA_BIN=$(find "$DATASETS" -type f -name '*.bin' -print -quit)
+  [[ -n $FIRST_DATA_BIN && -f ${FIRST_DATA_BIN%.bin}.idx ]] \
+    && echo "CAPSTOR DATASET PAIR OK FROM SUBMISSION NODE: $FIRST_DATA_BIN" \
+    || echo "CANNOT FIND A COMPLETE DATASET PAIR FROM SUBMISSION NODE"
   srun --environment=test-env bash -c \
-    "ls '$DATASETS/dump-0-merged.bin' && echo 'CAPSTOR FILE OK' || echo 'CAPSTOR FILE FAILED'"
+    "find '$DATASETS' -type f -name '*.bin' -print -quit | grep -q . && echo 'CAPSTOR DATASET OK' || echo 'CAPSTOR DATASET FAILED'"
 fi
 
 printf 'Training command:'

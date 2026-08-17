@@ -16,13 +16,17 @@ experiment_manager/              resolver, validation, records, and Slurm interf
 mask_exp.py                      local command-line entry point
 ```
 
-The included `1b_llama` recipe defines a 100B-token main run and explicit cooldown branches from
-three persistent checkpoint milestones. Each condition gets a distinct experiment/checkpoint name,
-such as `1b-masking-ablation__span-020-s2`.
+The included `1b_llama` recipe defines a 200B-token WSD trunk using the MEAP paper's reported
+1.1B architecture and optimization settings. Explicit 10B-token cooldown branches from persistent
+milestones near 30B, 50B, and 190B produce models near the paper's 40B, 60B, and 200B budgets.
+Each condition gets a distinct experiment/checkpoint name, such as
+`1b-masking-ablation__span-020-s2`.
 
 ## Basic workflow
 
-Use Python 3.11 on the current system and make sure `SCRATCH` is defined:
+Use Python 3.11 on the current system and make sure `SCRATCH` is defined. It is
+used for dataset-index caches; the Megatron checkout is under `~/developer`,
+and durable checkpoints do not use it:
 
 ```bash
 cd /users/smehra/developer/mask-experiment-manager
@@ -83,7 +87,7 @@ overrides:
 
 Only environment keys declared by the recipe may be overridden, so misspelled parameters fail
 validation. `INPUT_MASK_RATIO: 0.0` is the vanilla NTP control. The recipe uses the reserved
-`<SPECIAL_999>` token, and validation ensures mask ratios, strategies, span lengths, stage token
+`[control_768]` token from the Mistral v0.3 tokenizer, and validation ensures mask ratios, strategies, span lengths, stage token
 counts, and cooldown checkpoint alignment are coherent.
 
 Each cooldown source has an independent token budget. For example:
@@ -109,9 +113,10 @@ older shared `cooldown.tokens` plus `source_iterations` syntax remains accepted 
 ## Short end-to-end smoke test
 
 The isolated `test_run` setup uses the production 1B architecture and four-GPU topology, but limits
-each Slurm job to 30 minutes. It trains the main stage for 100M tokens (24 iterations), persistently
-saves approximately every 25M tokens (6 iterations), and defines 20M- and 10M-token cooldowns from
-iterations 6 and 18. It writes under the separate `mask_pretraining_test/test_run` checkpoint
+each Slurm job to 45 minutes. It trains the main stage for 100M tokens (24 iterations), creates one
+rolling checkpoint halfway through, saves persistently at the end, and defines a 10M-token cooldown
+from the final iteration. It writes under the separate
+`mask_pretraining_test/test_run` checkpoint
 namespace and prints one augmented span-masking example per job.
 
 ```bash
@@ -145,6 +150,16 @@ Each render creates `runs/STUDY/CONDITION/TIMESTAMP-HASH/` containing:
 - `scripts/`: executable snapshots of exact `sbatch` commands;
 - `metadata.yaml`: source paths and Git state for this manager, the submission setup, and Megatron;
 - `jobs.yaml`: append-only submission history and job IDs.
+- `stages/STAGE/slurm/`: the sole Slurm stdout/stderr location for each submission;
+- `stages/STAGE/logging/`: TensorBoard and other reproducibility logs;
+- `stages/STAGE/debug/`: optional NCCL and masking diagnostics.
+
+Checkpoints and local W&B state are colocated under
+`/capstor/scratch/cscs/smehra/megatron-runs/`. Every launcher reapplies the
+configured composite Lustre default layout to that base before it creates any
+experiment descendants. The tokenized DCLM-Edu dataset lives under
+`/iopsstor/scratch/cscs/smehra/tokenized_datasets/`; raw source Parquet remains
+on Capstor.
 
 Submission and resume operations use the frozen record and its launcher snapshot rather than
 re-reading a potentially edited condition or active launcher. This lets future recipes expose or

@@ -94,6 +94,11 @@ def create_run_record(experiment: ResolvedExperiment) -> Path:
     frozen_resolved["execution"]["working_directory"] = str(
         experiment.submission_script.parent
     )
+    frozen_resolved["execution"]["run_record"] = str(run_dir)
+    for stage in frozen_resolved["stages"]:
+        stage_artifacts = run_dir / "stages" / stage["key"]
+        (stage_artifacts / "slurm").mkdir(parents=True)
+        stage["environment"]["EXPERIMENT_ARTIFACTS_DIR"] = str(stage_artifacts)
 
     (run_dir / "resolved.yaml").write_text(
         yaml.safe_dump(frozen_resolved, sort_keys=False, width=120)
@@ -180,9 +185,17 @@ def command_from_record(resolved: dict[str, Any], stage: dict[str, Any]) -> list
     working_directory = resolved["execution"].get(
         "working_directory", str(submission_script.parent)
     )
+    stage_artifacts = stage["environment"].get("EXPERIMENT_ARTIFACTS_DIR")
+    logging_args = []
+    if stage_artifacts:
+        logging_args = [
+            f"--output={stage_artifacts}/slurm/%x-%j.out",
+            f"--error={stage_artifacts}/slurm/%x-%j.err",
+        ]
     return [
         "sbatch",
         *resolved["execution"].get("sbatch_args", []),
+        *logging_args,
         f"--chdir={working_directory}",
         f"--job-name={resolved['execution']['experiment_name']}--{stage['key']}",
         f"--export={','.join(exports)}",

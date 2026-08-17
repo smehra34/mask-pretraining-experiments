@@ -5,7 +5,7 @@ execution:
   submission_script: ../submission/train_1b_llama.sh
   project_name: mask_pretraining
   experiment_name: "{study}__{condition}"
-  checkpoint_root: "${SCRATCH}/megatron-runs/checkpoints/{project}/{experiment}"
+  checkpoint_root: "/capstor/scratch/cscs/smehra/megatron-runs/checkpoints/{project}/{experiment}"
   artifacts_root: ../runs
   sbatch_args:
     - --account=infra01
@@ -20,22 +20,31 @@ execution:
 # These are the invariant settings for every condition using this recipe.
 # Conditions may override only keys declared in this mapping.
 environment:
-  DATASETS: /capstor/store/cscs/swissai/infra01/datasets/tokenized/swissai-dclm-edu-filterrobots_fine-merge/
-  MEGATRON_LM_DIR: "${SCRATCH}/Megatron-LM"
-  DATASET_CACHE_DIR: "${SCRATCH}/datasets/cache"
+  DATASETS: /iopsstor/scratch/cscs/smehra/tokenized_datasets/dclm-edu__mistral-7b-v0.3
+  TOKENIZER_MODEL: mistralai/Mistral-7B-v0.3
+  MEGATRON_LM_DIR: /users/smehra/developer/Megatron-LM
+  DATASET_CACHE_DIR: "${SCRATCH}/datasets/cache-dclm-edu-mistral-v03"
+  CHECKPOINT_STORAGE_ROOT: /capstor/scratch/cscs/smehra/megatron-runs
   MBS: 4
-  GBS: 1024
+  # MEAP Table 11 specifies a global batch of 256 sequences.
+  GBS: 256
   SEQ_LEN: 4096
-  WARMUP_STEPS: 2000
-  PEAK_LR: 0.00001
-  MIN_LR: 0.0
-  SEED: 28
+  # Use the modern Llama 3 base frequency from initial pretraining to ease
+  # later long-context extension without enabling post-hoc RoPE scaling.
+  ROTARY_BASE: 500000
+  # Approximately 10% of the paper's 190K-step, 200B-token run. Under WSD,
+  # this warmup is shared by the main trunk rather than restarted per budget.
+  WARMUP_STEPS: 19000
+  PEAK_LR: 0.0004
+  MIN_LR: 0.00004
+  # The released MEAP pretraining scripts seed model/data setup with 3407.
+  SEED: 3407
   LOG_INTERVAL: 1
   EVAL_INTERVAL: 100
   EVAL_ITERS: 10
   ATTENTION_DROPOUT: 0.0
   HIDDEN_DROPOUT: 0.0
-  WEIGHT_DECAY: 0.1
+  WEIGHT_DECAY: 0.05
   SAVE_EVERY_TOKENS: 10000000000
   ROLLING_CHECKPOINTS: true
   ROLLING_SAVE_EVERY_TOKENS: 1000000000
@@ -43,7 +52,7 @@ environment:
   INPUT_MASK_RATIO: 0.0
   INPUT_MASK_STRATEGY: random
   INPUT_MASK_SPAN_LENGTH: 1
-  INPUT_MASK_TOKEN: <SPECIAL_999>
+  INPUT_MASK_TOKEN: "[control_768]"
   INPUT_MASK_DEBUG: false
   INPUT_MASK_DEBUG_TOKENS: 128
   LOG_NCCL: false
@@ -54,12 +63,15 @@ environment:
 
 stages:
   main:
-    train_tokens: 100000000000
+    train_tokens: 200000000000
   cooldown:
+    # Preserve the existing 10B-token WSD cooldown assumption. With a batch of
+    # 256, persistent saves are 9,537 iterations apart (~10B tokens), so these
+    # branches finish close to the paper's 40B, 60B, and 200B budgets.
     branches:
-      - source_iteration: 2384
+      - source_iteration: 28611
         tokens: 10000000000
-      - source_iteration: 11920
+      - source_iteration: 47685
         tokens: 10000000000
-      - source_iteration: 21456
+      - source_iteration: 181203
         tokens: 10000000000

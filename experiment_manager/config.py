@@ -193,7 +193,10 @@ def load_experiment(config_path: str | Path) -> ResolvedExperiment:
     execution = _require_mapping(recipe, "execution")
     stages_config = _require_mapping(recipe, "stages")
     main_config = _require_mapping(stages_config, "main")
-    cooldown_config = _require_mapping(stages_config, "cooldown")
+    cooldown_value = stages_config.get("cooldown")
+    if cooldown_value is not None and not isinstance(cooldown_value, dict):
+        raise ConfigError("'cooldown' must be a mapping")
+    cooldown_config = cooldown_value
     base_environment = _require_mapping(recipe, "environment")
     overrides = condition.get("overrides", {})
     if not isinstance(overrides, dict):
@@ -257,13 +260,21 @@ def load_experiment(config_path: str | Path) -> ResolvedExperiment:
     )
 
     train_tokens = _require_positive_int(main_config.get("train_tokens"), "main.train_tokens")
-    branches_config = cooldown_config.get("branches")
-    uses_legacy_cooldown = "tokens" in cooldown_config or "source_iterations" in cooldown_config
-    if branches_config is not None and uses_legacy_cooldown:
+    main_mode = str(main_config.get("mode", "main"))
+    if main_mode not in {"main", "extension"}:
+        raise ConfigError("main.mode must be 'main' or 'extension'")
+    branches_config = None if cooldown_config is None else cooldown_config.get("branches")
+    if cooldown_config is None:
+        branches: list[tuple[int, int]] = []
+    else:
+        uses_legacy_cooldown = "tokens" in cooldown_config or "source_iterations" in cooldown_config
+    if cooldown_config is not None and branches_config is not None and uses_legacy_cooldown:
         raise ConfigError(
             "cooldown must use either branches or legacy tokens/source_iterations, not both"
         )
-    if branches_config is not None:
+    if cooldown_config is None:
+        pass
+    elif branches_config is not None:
         if not isinstance(branches_config, list) or not branches_config:
             raise ConfigError("cooldown.branches must be a non-empty list")
         branches: list[tuple[int, int]] = []
@@ -330,8 +341,8 @@ def load_experiment(config_path: str | Path) -> ResolvedExperiment:
         "EXP_NAME": experiment_name,
         "CHECKPOINT_ROOT": str(checkpoint_root),
     }
-    main_env = {**common_env, "RUN_MODE": "main", "TRAIN_TOKENS": str(train_tokens)}
-    stages = [Stage("main", "main", None, main_env)]
+    main_env = {**common_env, "RUN_MODE": main_mode, "TRAIN_TOKENS": str(train_tokens)}
+    stages = [Stage("main", main_mode, None, main_env)]
     for source_iteration, cooldown_tokens in branches:
         stages.append(
             Stage(
