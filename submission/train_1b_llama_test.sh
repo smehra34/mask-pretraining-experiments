@@ -23,7 +23,7 @@ COOLDOWN_TOKENS=${COOLDOWN_TOKENS:-}
 
 DATASETS=${DATASETS:-/iopsstor/scratch/cscs/smehra/tokenized_datasets/dclm-edu__mistral-7b-v0.3}
 TOKENIZER_MODEL=${TOKENIZER_MODEL:-mistralai/Mistral-7B-v0.3}
-MBS=${MBS:-4}
+MBS=${MBS:-8}
 GBS=${GBS:-1024}
 SEQ_LEN=${SEQ_LEN:-4096}
 WARMUP_STEPS=${WARMUP_STEPS:-2000}
@@ -55,6 +55,7 @@ BACKUP_CODEBASE=${BACKUP_CODEBASE:-false}
 RUN_CAPSTOR_DIAGNOSTICS=${RUN_CAPSTOR_DIAGNOSTICS:-false}
 
 MEGATRON_LM_DIR=${MEGATRON_LM_DIR:-/users/smehra/developer/Megatron-LM}
+MEGATRON_RUNTIME_DEPS=${MEGATRON_RUNTIME_DEPS:-/users/smehra/developer/megatron-runtime-deps/nvrx-0.6.0}
 DATASET_CACHE_DIR=${DATASET_CACHE_DIR:-/iopsstor/scratch/cscs/$USER/datasets/cache}
 PROJECT_NAME=${PROJECT_NAME:-mask_pretraining}
 EXP_NAME=${EXP_NAME:-llama_1b_wsd}
@@ -92,7 +93,8 @@ WARMUP_SAMPLES=$((WARMUP_STEPS * GBS))
 case "$RUN_MODE" in
   main)
     : "${TRAIN_TOKENS:?Set TRAIN_TOKENS to the total main-run token budget}"
-    TRAIN_SAMPLES=$(ceil_div "$TRAIN_TOKENS" "$SEQ_LEN")
+    TRAIN_ITERS=$(ceil_div "$TRAIN_TOKENS" "$TOKENS_PER_ITER")
+    TRAIN_SAMPLES=$((TRAIN_ITERS * GBS))
     LOAD_DIR=$MAIN_CKPT_DIR
     SAVE_DIR=$MAIN_CKPT_DIR
     RUN_NAME=${EXP_NAME}-main
@@ -112,7 +114,8 @@ case "$RUN_MODE" in
     [[ $SOURCE_ITER =~ ^[0-9]+$ ]] || { echo "SOURCE_ITER must be an integer" >&2; exit 2; }
 
     SOURCE_SAMPLES=$((SOURCE_ITER * GBS))
-    COOLDOWN_SAMPLES=$(ceil_div "$COOLDOWN_TOKENS" "$SEQ_LEN")
+    COOLDOWN_ITERS=$(ceil_div "$COOLDOWN_TOKENS" "$TOKENS_PER_ITER")
+    COOLDOWN_SAMPLES=$((COOLDOWN_ITERS * GBS))
     TRAIN_SAMPLES=$((SOURCE_SAMPLES + COOLDOWN_SAMPLES))
     PADDED_ITER=$(printf '%07d' "$SOURCE_ITER")
     SOURCE_CKPT=$MAIN_CKPT_DIR/iter_$PADDED_ITER
@@ -150,12 +153,11 @@ esac
 
 LOGGING_DIR=$EXPERIMENT_ARTIFACTS_DIR/logging
 TENSORBOARD_DIR=$LOGGING_DIR/tensorboard
-TRIGGER_DIR=$EXPERIMENT_ARTIFACTS_DIR/triggers
 DEBUG_DIR=$EXPERIMENT_ARTIFACTS_DIR/debug/$SLURM_JOB_ID
 BACKUP_CODEBASE_DIR=$EXPERIMENT_ARTIFACTS_DIR/source/Megatron-LM
 WANDB_DIR=$CHECKPOINT_ROOT/wandb/$RUN_NAME
 
-mkdir -p "$SAVE_DIR" "$LOGGING_DIR" "$TRIGGER_DIR" "$DEBUG_DIR" "$WANDB_DIR"
+mkdir -p "$SAVE_DIR" "$LOGGING_DIR" "$DEBUG_DIR" "$WANDB_DIR"
 
 echo "Mode: $RUN_MODE"
 echo "Training target: $TRAIN_SAMPLES samples ($((TRAIN_SAMPLES * SEQ_LEN)) tokens)"
@@ -201,7 +203,11 @@ if [[ $BACKUP_CODEBASE == true ]]; then
 fi
 
 cd "$MEGATRON_LM_DIR"
-export PYTHONPATH=$MEGATRON_LM_DIR:${PYTHONPATH:-}
+[[ -d "$MEGATRON_RUNTIME_DEPS" ]] || {
+  echo "Missing Megatron runtime dependency overlay: $MEGATRON_RUNTIME_DEPS" >&2
+  exit 2
+}
+export PYTHONPATH=$MEGATRON_RUNTIME_DEPS:$MEGATRON_LM_DIR:${PYTHONPATH:-}
 
 ################ Megatron argument groups ################
 # These remain separate so model, optimizer, parallelism, and data settings can
@@ -234,7 +240,6 @@ LOGGING_ARGS=(
   --log-throughput
   --tensorboard-dir "$TENSORBOARD_DIR"
   --log-timers-to-tensorboard
-  --no-log-loss-scale-to-tensorboard
   --log-memory-to-tensorboard
 )
 

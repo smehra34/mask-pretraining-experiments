@@ -61,6 +61,7 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(experiment.experiment_name, "mistral-v03-test_run")
         self.assertEqual(experiment.project_name, "mask_pretraining_test")
         self.assertEqual(experiment.main.environment["TRAIN_TOKENS"], "100000000")
+        self.assertEqual(experiment.main.environment["MBS"], "8")
         self.assertEqual(
             [stage.environment["COOLDOWN_TOKENS"] for stage in experiment.cooldowns],
             ["10000000"],

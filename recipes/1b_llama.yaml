@@ -25,7 +25,7 @@ environment:
   MEGATRON_LM_DIR: /users/smehra/developer/Megatron-LM
   DATASET_CACHE_DIR: "${SCRATCH}/datasets/cache-dclm-edu-mistral-v03"
   CHECKPOINT_STORAGE_ROOT: /capstor/scratch/cscs/smehra/megatron-runs
-  MBS: 4
+  MBS: 8
   # MEAP Table 11 specifies a global batch of 256 sequences.
   GBS: 256
   SEQ_LEN: 4096
