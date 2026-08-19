@@ -389,7 +389,15 @@ fi
 if [[ $MOCK_DATA == true ]]; then
   DATA_ARGS+=(--mock-data)
 else
-  read -r -a DATA_PATHS <<< "$(python3 scripts/tools/create_data_config.py -p "$DATASETS")"
+  IFS=',' read -r -a DATASET_ROOTS <<< "$DATASETS"
+  DATA_PATHS=()
+  while IFS= read -r -d '' bin_file; do
+    DATA_PATHS+=("${bin_file%.bin}")
+  done < <(find "${DATASET_ROOTS[@]}" -type f -name '*.bin' -print0 | sort -z)
+  ((${#DATA_PATHS[@]} > 0)) || {
+    echo "No Megatron .bin datasets found under: $DATASETS" >&2
+    exit 2
+  }
   DATA_ARGS+=(--data-path "${DATA_PATHS[@]}" --data-cache-path "$DATASET_CACHE_DIR")
 fi
 
@@ -418,6 +426,13 @@ else
 fi
 
 CMD_PREFIX=(numactl --membind=0-3)
+# The site environment selected by `srun --environment` replaces exported
+# PYTHONPATH values. Pass the overlay explicitly inside the launched command so
+# the container interpreter sees the pinned NVRx distribution and this checkout.
+RUNTIME_ENV=(
+  env
+  "PYTHONPATH=$PYTHONPATH"
+)
 if [[ $LOG_NCCL == true ]]; then
   export NCCL_DEBUG=INFO
   export NCCL_DEBUG_FILE=$DEBUG_DIR/nccl-info-%p.txt
@@ -433,7 +448,7 @@ if [[ $RUN_CAPSTOR_DIAGNOSTICS == true && $MOCK_DATA != true ]]; then
 fi
 
 printf 'Training command:'
-printf ' %q' "${CMD_PREFIX[@]}" torchrun "${TORCHRUN_ARGS[@]}" \
+printf ' %q' "${RUNTIME_ENV[@]}" "${CMD_PREFIX[@]}" torchrun "${TORCHRUN_ARGS[@]}" \
   "$MEGATRON_LM_DIR/pretrain_gpt.py" \
   "${TRANSFORMER_ENGINE_ARGS[@]}" "${NETWORK_SIZE_ARGS[@]}" \
   "${LOGGING_ARGS[@]}" "${REGULARIZATION_ARGS[@]}" \
@@ -446,7 +461,7 @@ printf '\n'
 echo "START TIME: $(date)"
 srun --cpus-per-task "$SLURM_CPUS_PER_TASK" --mpi=pmix \
   --distribution=block:block --network=disable_rdzv_get --environment=test-env \
-  "${CMD_PREFIX[@]}" torchrun "${TORCHRUN_ARGS[@]}" \
+  "${RUNTIME_ENV[@]}" "${CMD_PREFIX[@]}" torchrun "${TORCHRUN_ARGS[@]}" \
   "$MEGATRON_LM_DIR/pretrain_gpt.py" \
   "${TRANSFORMER_ENGINE_ARGS[@]}" \
   "${NETWORK_SIZE_ARGS[@]}" \
