@@ -33,6 +33,13 @@ EVAL_ITERS=${EVAL_ITERS:-10}
 ATTENTION_DROPOUT=${ATTENTION_DROPOUT:-0.0}
 HIDDEN_DROPOUT=${HIDDEN_DROPOUT:-0.0}
 WEIGHT_DECAY=${WEIGHT_DECAY:-0.1}
+OPTIMIZER=${OPTIMIZER:-muon}
+MUON_MOMENTUM=${MUON_MOMENTUM:-0.95}
+MUON_NESTEROV=${MUON_NESTEROV:-true}
+MUON_SCALE_MODE=${MUON_SCALE_MODE:-spectral}
+MUON_EXTRA_SCALE_FACTOR=${MUON_EXTRA_SCALE_FACTOR:-1.0}
+MUON_NUM_NS_STEPS=${MUON_NUM_NS_STEPS:-5}
+MUON_SCALAR_OPTIMIZER=${MUON_SCALAR_OPTIMIZER:-adam}
 INPUT_MASK_RATIO=${INPUT_MASK_RATIO:-0.0}
 INPUT_MASK_STRATEGY=${INPUT_MASK_STRATEGY:-random}
 INPUT_MASK_SPAN_LENGTH=${INPUT_MASK_SPAN_LENGTH:-1}
@@ -276,8 +283,8 @@ NETWORK_SIZE_ARGS=(
   --ffn-hidden-size 5632
   --num-attention-heads 32
   --group-query-attention
-  # The released tiny_LLaMA_1b_mask config uses two KV/query groups.
-  --num-query-groups 2
+  # Conventional 4:1 grouped-query attention (32 query heads, 8 KV heads).
+  --num-query-groups 8
   --max-position-embeddings "$SEQ_LEN"
   --position-embedding-type rope
   --rotary-base "$ROTARY_BASE"
@@ -286,9 +293,8 @@ NETWORK_SIZE_ARGS=(
   --normalization RMSNorm
   --norm-epsilon 1e-5
   --swiglu
-  # The released model instantiates independent token-embedding and LM-head
-  # matrices rather than tying their weights.
-  --untie-embeddings-and-output-weights
+  # Token embeddings and the LM head are tied, keeping vocabulary matrices
+  # from consuming a disproportionate share of this model's parameters.
 )
 
 LOGGING_ARGS=(
@@ -319,11 +325,28 @@ TRAINING_ARGS=(
   --no-check-for-nan-in-loss-and-grad
   --cross-entropy-loss-fusion
   --disable-bias-linear
-  --optimizer adam
+  --optimizer "$OPTIMIZER"
   --dataloader-type single
   --manual-gc
   --manual-gc-interval 100
 )
+
+if [[ $OPTIMIZER == muon ]]; then
+  [[ $MUON_NESTEROV == true || $MUON_NESTEROV == false ]] || {
+    echo "MUON_NESTEROV must be 'true' or 'false'" >&2
+    exit 2
+  }
+  REGULARIZATION_ARGS+=(
+    --muon-momentum "$MUON_MOMENTUM"
+    --muon-scale-mode "$MUON_SCALE_MODE"
+    --muon-extra-scale-factor "$MUON_EXTRA_SCALE_FACTOR"
+    --muon-num-ns-steps "$MUON_NUM_NS_STEPS"
+    --muon-scalar-optimizer "$MUON_SCALAR_OPTIMIZER"
+  )
+  if [[ $MUON_NESTEROV == true ]]; then
+    REGULARIZATION_ARGS+=(--muon-nesterov)
+  fi
+fi
 
 INITIALIZATION_ARGS=(
   --seed "$SEED"
@@ -368,7 +391,7 @@ TOKENIZER_ARGS=(
 )
 
 DATA_ARGS=(
-  --split 100,0,0
+  --split 995,5,0
   --seq-length "$SEQ_LEN"
   --num-workers 2
   # --num-dataset-builder-threads 1

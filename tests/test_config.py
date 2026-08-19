@@ -56,6 +56,47 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(len(experiments), 5)
         self.assertEqual(len({item.experiment_name for item in experiments}), 5)
 
+    def test_muon_sweep_is_short_unmasked_and_varies_optimizer_settings(self) -> None:
+        name, experiments = load_collection(ROOT / "collections/1b_muon_sweep.yaml")
+        self.assertEqual(name, "1b-muon-sweep")
+        self.assertEqual(len(experiments), 5)
+        self.assertEqual(
+            {experiment.main.environment["WANDB_PROJECT"] for experiment in experiments},
+            {"mask_pretraining"},
+        )
+        self.assertEqual(
+            {experiment.main.environment["STUDY_NAME"] for experiment in experiments},
+            {"1b-muon-sweep"},
+        )
+        self.assertIn("--time=10:00:00", experiments[0].sbatch_args)
+        self.assertEqual(
+            {experiment.main.environment["TRAIN_TOKENS"] for experiment in experiments},
+            {"5000000000"},
+        )
+        self.assertEqual(
+            {experiment.main.environment["WARMUP_STEPS"] for experiment in experiments},
+            {"500"},
+        )
+        self.assertEqual(
+            {experiment.main.environment["INPUT_MASK_RATIO"] for experiment in experiments},
+            {"0.0"},
+        )
+        self.assertEqual(
+            {experiment.main.environment["OPTIMIZER"] for experiment in experiments},
+            {"muon"},
+        )
+        self.assertEqual(
+            {experiment.main.environment["PEAK_LR"] for experiment in experiments},
+            {"0.0002", "0.0004", "0.0008"},
+        )
+        self.assertEqual(
+            {
+                experiment.main.environment["MUON_EXTRA_SCALE_FACTOR"]
+                for experiment in experiments
+            },
+            {"0.2", "0.5", "1.0"},
+        )
+
     def test_smoke_run_is_short_and_isolated(self) -> None:
         experiment = load_experiment(ROOT / "studies/test_run/test_run.yaml")
         self.assertEqual(experiment.experiment_name, "mistral-v03-test_run")

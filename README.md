@@ -16,9 +16,11 @@ experiment_manager/              resolver, validation, records, and Slurm interf
 mask_exp.py                      local command-line entry point
 ```
 
-The included `1b_llama` recipe defines a 200B-token WSD trunk using the MEAP paper's reported
-1.1B architecture and optimization settings. Explicit 10B-token cooldown branches from persistent
-milestones near 30B, 50B, and 190B produce models near the paper's 40B, 60B, and 200B budgets.
+The included `1b_llama` recipe defines a modern approximately 1.15B-parameter Llama-family model
+and a 200B-token WSD trunk. It uses tied embeddings, 4:1 grouped-query attention, and Muon for
+eligible matrix weights with Adam for the remaining parameters. Explicit 10B-token cooldown
+branches from persistent milestones near 30B, 50B, and 190B produce models near 40B, 60B, and
+200B training-token budgets.
 Each condition gets a distinct experiment/checkpoint name, such as
 `1b-masking-ablation__span-020-s2`.
 
@@ -68,6 +70,33 @@ If Slurm interrupts a stage, resubmit its exact frozen configuration:
 The underlying submission script detects its rolling checkpoint and resumes. The manager refuses
 to start a new main run in an occupied checkpoint namespace and refuses to start a cooldown branch
 that already has a tracker; use `resume` for those cases.
+
+## Short Muon selection sweep
+
+Before running objective comparisons, validate and submit the unmasked Muon sweep:
+
+```bash
+/usr/bin/python3.11 mask_exp.py plan-collection collections/1b_muon_sweep.yaml
+
+for condition in studies/1b_muon_sweep/*.yaml; do
+  /usr/bin/python3.11 mask_exp.py submit-main "$condition"
+done
+```
+
+Each condition targets 5B tokens (4,769 updates), warms up for 500 updates, and evaluates clean
+validation data every 100 updates. The five conditions compare peak learning rates of 2e-4,
+4e-4, and 8e-4 at unit Muon scale, plus Muon scale multipliers 0.2 and 0.5 at the center learning
+rate. Main mode deliberately uses only WSD warmup and stable training; cooldown is excluded from
+optimizer selection. Inspect all conditions near 1B tokens and stop clearly unstable or inferior
+runs, then select among the survivors using validation loss and its trend over the later stable
+phase. Freeze the selected settings in `recipes/1b_llama.yaml` before defining masking or MTP
+comparisons.
+
+All studies log to the shared `mask_pretraining` W&B project. Runs are grouped by study and tagged
+with their study, recipe, condition, and stage, allowing either cross-study comparison or filtered
+study-specific views. At the measured ~5.88 seconds per update, a complete 5B-token Muon condition
+takes about 7.8 hours of training time; the sweep requests 10 hours to cover startup, validation,
+and checkpointing.
 
 ## Defining experiments
 

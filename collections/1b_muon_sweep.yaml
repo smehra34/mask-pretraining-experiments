@@ -1,0 +1,8 @@
+schema_version: 1
+name: 1b-muon-sweep
+conditions:
+  - ../studies/1b_muon_sweep/lr_2e4_scale_1.yaml
+  - ../studies/1b_muon_sweep/lr_4e4_scale_1.yaml
+  - ../studies/1b_muon_sweep/lr_8e4_scale_1.yaml
+  - ../studies/1b_muon_sweep/lr_4e4_scale_02.yaml
+  - ../studies/1b_muon_sweep/lr_4e4_scale_05.yaml

@@ -1,0 +1,9 @@
+schema_version: 1
+recipe: ../../recipes/1b_muon_sweep.yaml
+study: 1b-muon-sweep
+name: lr-2e4-scale-1
+description: Muon pilot with 2e-4 shared peak LR and unit spectral scale multiplier.
+overrides:
+  PEAK_LR: 0.0002
+  MIN_LR: 0.00002
+  MUON_EXTRA_SCALE_FACTOR: 1.0
