@@ -28,6 +28,7 @@ environment:
   DATASET_CACHE_DIR: "${SCRATCH}/datasets/cache-long-context-64k"
   SOURCE_CHECKPOINT_DIR: "/capstor/scratch/cscs/smehra/megatron-runs/checkpoints/mask_pretraining/REPLACE_WITH_BASE_EXPERIMENT/main"
   CHECKPOINT_STORAGE_ROOT: /capstor/scratch/cscs/smehra/megatron-runs
+  WANDB_PROJECT: mask_pretraining
   MBS: 1
   GBS: 64
   SEQ_LEN: 65536

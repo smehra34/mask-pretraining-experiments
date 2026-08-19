@@ -338,6 +338,9 @@ def load_experiment(config_path: str | Path) -> ResolvedExperiment:
     common_env = {
         **env,
         "PROJECT_NAME": project_name,
+        "RECIPE_NAME": recipe_name,
+        "STUDY_NAME": study,
+        "CONDITION_NAME": condition_name,
         "EXP_NAME": experiment_name,
         "CHECKPOINT_ROOT": str(checkpoint_root),
     }

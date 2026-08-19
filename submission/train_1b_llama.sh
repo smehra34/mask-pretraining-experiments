@@ -60,6 +60,12 @@ MEGATRON_LM_DIR=${MEGATRON_LM_DIR:-/users/smehra/developer/Megatron-LM}
 MEGATRON_RUNTIME_DEPS=${MEGATRON_RUNTIME_DEPS:-/users/smehra/developer/megatron-runtime-deps/nvrx-0.6.0}
 DATASET_CACHE_DIR=${DATASET_CACHE_DIR:-/iopsstor/scratch/cscs/$USER/datasets/cache}
 PROJECT_NAME=${PROJECT_NAME:-mask_pretraining}
+RECIPE_NAME=${RECIPE_NAME:-unknown-recipe}
+STUDY_NAME=${STUDY_NAME:-unknown-study}
+CONDITION_NAME=${CONDITION_NAME:-unknown-condition}
+WANDB_PROJECT=${WANDB_PROJECT:-mask_pretraining}
+WANDB_GROUP=${WANDB_GROUP:-$STUDY_NAME}
+WANDB_TAGS=${WANDB_TAGS:-study:$STUDY_NAME,recipe:$RECIPE_NAME,condition:$CONDITION_NAME,stage:$RUN_MODE}
 EXP_NAME=${EXP_NAME:-llama_1b_wsd}
 EXPERIMENT_ARTIFACTS_DIR=${EXPERIMENT_ARTIFACTS_DIR:?The experiment manager must provide EXPERIMENT_ARTIFACTS_DIR}
 CHECKPOINT_STORAGE_ROOT=${CHECKPOINT_STORAGE_ROOT:-/capstor/scratch/cscs/$USER/megatron-runs}
@@ -193,13 +199,11 @@ case "$RUN_MODE" in
     ;;
 esac
 
-LOGGING_DIR=$EXPERIMENT_ARTIFACTS_DIR/logging
-TENSORBOARD_DIR=$LOGGING_DIR/tensorboard
 DEBUG_DIR=$EXPERIMENT_ARTIFACTS_DIR/debug/$SLURM_JOB_ID
 BACKUP_CODEBASE_DIR=$EXPERIMENT_ARTIFACTS_DIR/source/Megatron-LM
 WANDB_DIR=$CHECKPOINT_ROOT/wandb/$RUN_NAME
 
-mkdir -p "$SAVE_DIR" "$LOGGING_DIR" "$DEBUG_DIR" "$WANDB_DIR"
+mkdir -p "$SAVE_DIR" "$DEBUG_DIR" "$WANDB_DIR"
 
 echo "Mode: $RUN_MODE"
 echo "Training target: $TRAIN_SAMPLES samples ($((TRAIN_SAMPLES * SEQ_LEN)) tokens)"
@@ -289,7 +293,8 @@ NETWORK_SIZE_ARGS=(
 
 LOGGING_ARGS=(
   --log-throughput
-  --tensorboard-dir "$TENSORBOARD_DIR"
+  # Despite its legacy name, this also enables iteration timers and throughput
+  # metrics in W&B when no TensorBoard writer is configured.
   --log-timers-to-tensorboard
   --log-memory-to-tensorboard
 )
@@ -418,7 +423,7 @@ if [[ -n ${WANDB_API_KEY:-} ]]; then
   mkdir -p "$WANDB_DATA_DIR" "$WANDB_ARTIFACT_DIR"
   WANDB_ARGS=(
     --wandb-save-dir "$WANDB_DIR"
-    --wandb-project "$PROJECT_NAME"
+    --wandb-project "$WANDB_PROJECT"
     --wandb-exp-name "$RUN_NAME-$SLURM_JOB_ID"
   )
 else
@@ -432,6 +437,8 @@ CMD_PREFIX=(numactl --membind=0-3)
 RUNTIME_ENV=(
   env
   "PYTHONPATH=$PYTHONPATH"
+  "WANDB_RUN_GROUP=$WANDB_GROUP"
+  "WANDB_TAGS=$WANDB_TAGS"
 )
 if [[ $LOG_NCCL == true ]]; then
   export NCCL_DEBUG=INFO

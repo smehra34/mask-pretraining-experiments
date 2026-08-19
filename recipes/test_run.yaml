@@ -26,6 +26,7 @@ environment:
   MEGATRON_LM_DIR: /users/smehra/developer/Megatron-LM
   DATASET_CACHE_DIR: "${SCRATCH}/datasets/cache-dclm-edu-mistral-v03-test"
   CHECKPOINT_STORAGE_ROOT: /capstor/scratch/cscs/smehra/megatron-runs
+  WANDB_PROJECT: mask_pretraining
   MBS: 8
   GBS: 1024
   SEQ_LEN: 4096
