@@ -98,6 +98,60 @@ study-specific views. At the measured ~5.88 seconds per update, a complete 5B-to
 takes about 7.8 hours of training time; the sweep requests 10 hours to cover startup, validation,
 and checkpointing.
 
+## Checkpoint evaluation with lm-eval
+
+Evaluation definitions live in `evaluations/suites.yaml`. The experiment
+manager delegates execution to Spellbook, which uses lm-eval's native
+`megatron_lm` backend to load distributed Megatron checkpoints directly. No
+Hugging Face checkpoint conversion is required. The local lm-eval checkout and
+its expected commit are pinned in the suite configuration so prompts, datasets,
+metrics, and backend behavior remain reproducible without requiring outbound
+GitHub access from compute nodes.
+
+Each evaluation targets an immutable training run record, a stage, and either
+an explicit checkpoint iteration or the stage's latest checkpoint:
+
+```bash
+# Limited integration check. The explicit step can be planned before it exists.
+/usr/bin/python3.11 mask_exp.py plan-eval RUN_DIRECTORY \
+  --stage main --step 10300 --suite smoke --skip-checkpoint-check
+
+# Freeze scripts and metadata without submitting.
+/usr/bin/python3.11 mask_exp.py render-eval RUN_DIRECTORY \
+  --stage main --step latest --suite core --suite math
+
+# Submit multiple independent suite jobs for the same checkpoint.
+/usr/bin/python3.11 mask_exp.py submit-eval RUN_DIRECTORY \
+  --stage main --step latest --suite core --suite math
+```
+
+Available suites are deliberately cost-tiered:
+
+- `smoke`: 20 examples each from HellaSwag, ARC-Easy, and GSM8K. These limited
+  results diagnose integration only and must not be reported as model results.
+- `core`: HellaSwag, PIQA, Winogrande, ARC-Easy, ARC-Challenge, OpenBookQA, and
+  BoolQ using relatively inexpensive likelihood/multiple-choice evaluation.
+- `math`: the complete deterministic GSM8K evaluation for primary checkpoints.
+- `code`: complete MBPP and HumanEval pass@1 evaluation. This executes generated
+  Python and is rejected unless `--allow-unsafe-code` is passed.
+
+Code evaluation is not made safe merely by the opt-in flag. Run it only in an
+appropriately isolated environment with no valuable credentials or writable
+data exposed. The flag records explicit acknowledgement and enables lm-eval's
+unsafe task guard; it is not a security sandbox.
+
+Spellbook caches constructed evaluation requests across checkpoints but never
+shares cached model responses. Full JSON results are written below the durable
+evaluation root configured in `evaluations/suites.yaml`. Each training
+condition/stage/suite receives a separate evaluation run in the shared
+`mask_pretraining` W&B project, grouped by study and tagged with condition,
+stage, and suite. Checkpoint iteration is used as the W&B logging step.
+
+For the initial scaling screen, run `core` at intermediate persistent
+checkpoints and run the complete `math` and `code` suites only for the primary
+final checkpoints. This controls generation cost without using truncated
+datasets for reported results.
+
 ## Defining experiments
 
 Copy a condition file and change `name`, `description`, and `overrides`:
