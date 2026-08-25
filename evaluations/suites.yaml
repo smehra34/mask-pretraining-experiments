@@ -1,0 +1,63 @@
+schema_version: 1
+
+backend:
+  spellbook_path: /users/smehra/developer/spellbook
+  megatron_path: /users/smehra/developer/Megatron-LM
+  megatron_runtime_deps: /users/smehra/developer/megatron-runtime-deps/nvrx-0.6.0
+  # Pin task definitions, prompts, metrics, and the native Megatron adapter.
+  # The local source avoids requiring outbound GitHub access from compute nodes.
+  lm_eval_source: /users/smehra/developer/lm-eval-v0.4.12
+  lm_eval_commit: 6d642546f4688648fced259eb3302efd36ece5af
+  lm_eval_patch: megatron-inference-rank0-wandb-atomic-cache-20260825
+  output_root: /capstor/scratch/cscs/smehra/megatron-runs/evaluations
+  request_cache: /iopsstor/scratch/cscs/smehra/lm-eval/request-cache-v0.4.12
+  hf_home: /iopsstor/scratch/cscs/smehra/huggingface/lm-eval-v0.4.12
+  container_edf: test-env
+  account: infra01
+  reservation: SD-69241-apertus-1-5-0
+  nodes: 1
+  gpus_per_node: 4
+  devices: 4
+  tp: 1
+  ep: 1
+  batch_size: 16
+  micro_batch_size: 8
+  launch_mode: torchrun
+  srun_extra_args: --network=disable_rdzv_get
+
+suites:
+  smoke:
+    description: Fast integration check; limited results are never publication metrics.
+    tasks: [hellaswag, arc_easy, gsm8k]
+    limit: 20
+    run_time: 00:30:00
+    log_samples: true
+    write_out: true
+
+  core:
+    description: Relatively cheap likelihood-based general and commonsense evaluation.
+    tasks: [hellaswag, piqa, winogrande, arc_easy, arc_challenge, openbookqa, boolq]
+    run_time: 02:00:00
+
+  math:
+    description: Focused deterministic generative math evaluation for primary checkpoints.
+    tasks: [gsm8k]
+    run_time: 02:00:00
+
+  code:
+    description: Execution-based pass@1 code evaluation; requires explicit unsafe-code opt-in.
+    tasks: [mbpp, humaneval]
+    run_time: 03:00:00
+    unsafe_code: true
+
+dataset_prefetch:
+  hellaswag: [Rowan/hellaswag]
+  piqa: [baber/piqa]
+  winogrande: [allenai/winogrande, winogrande_xl]
+  arc_easy: [allenai/ai2_arc, ARC-Easy]
+  arc_challenge: [allenai/ai2_arc, ARC-Challenge]
+  openbookqa: [allenai/openbookqa, main]
+  boolq: [aps/super_glue, boolq]
+  gsm8k: [openai/gsm8k, main]
+  mbpp: [google-research-datasets/mbpp, full]
+  humaneval: [openai/openai_humaneval]

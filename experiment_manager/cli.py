@@ -10,6 +10,12 @@ from pathlib import Path
 import yaml
 
 from experiment_manager.config import ConfigError, load_collection, load_experiment
+from experiment_manager.evaluation import (
+    append_evaluation_submission,
+    create_evaluation_record,
+    render_spellbook_script,
+    resolve_evaluation,
+)
 from experiment_manager.records import (
     append_submission,
     command_from_record,
@@ -19,6 +25,9 @@ from experiment_manager.records import (
     shell_command,
 )
 from experiment_manager.slurm import query, submit, with_dependency
+
+
+DEFAULT_EVALUATION_CONFIG = Path(__file__).resolve().parents[1] / "evaluations/suites.yaml"
 
 
 def _print_plan(experiment) -> None:
@@ -212,6 +221,88 @@ def cmd_status(args: argparse.Namespace) -> None:
     print(query([str(item["job_id"]) for item in submissions]))
 
 
+def _evaluation_step(value: str) -> int | None:
+    if value == "latest":
+        return None
+    if not value.isdigit() or int(value) <= 0:
+        raise argparse.ArgumentTypeError("checkpoint step must be 'latest' or a positive integer")
+    return int(value)
+
+
+def _resolved_evaluations(args: argparse.Namespace, *, require_checkpoint: bool):
+    return [
+        resolve_evaluation(
+            args.run,
+            stage_key=args.stage,
+            checkpoint_step=args.step,
+            suite_name=suite,
+            config_path=args.eval_config,
+            allow_unsafe_code=args.allow_unsafe_code,
+            require_checkpoint=require_checkpoint and not args.skip_checkpoint_check,
+        )
+        for suite in args.suite
+    ]
+
+
+def cmd_plan_eval(args: argparse.Namespace) -> None:
+    evaluations = _resolved_evaluations(args, require_checkpoint=False)
+    for index, evaluation in enumerate(evaluations):
+        if index:
+            print("\n" + "=" * 88 + "\n")
+        print(f"Evaluation: {evaluation.evaluation_name}")
+        print(f"Suite:      {evaluation.suite.name} ({', '.join(evaluation.suite.tasks)})")
+        print(f"Checkpoint: {evaluation.checkpoint_dir}/iter_{evaluation.checkpoint_step:07d}")
+        print(f"Tokens seen: {evaluation.training['tokens_seen']}")
+        print(f"W&B ID:     {evaluation.wandb_id}")
+        print(f"Config hash: {evaluation.config_hash}")
+        print("\nRendered Spellbook sbatch script:\n")
+        print(render_spellbook_script(evaluation, log_dir=Path("EVAL_RECORD/slurm")))
+
+
+def cmd_render_eval(args: argparse.Namespace) -> None:
+    for evaluation in _resolved_evaluations(args, require_checkpoint=True):
+        record_dir = create_evaluation_record(evaluation)
+        print(f"Rendered immutable evaluation record: {record_dir}")
+
+
+def cmd_submit_eval(args: argparse.Namespace) -> None:
+    for evaluation in _resolved_evaluations(args, require_checkpoint=True):
+        record_dir = create_evaluation_record(evaluation)
+        command = ["sbatch", str(record_dir / "submit.sh")]
+        job_id = submit(command)
+        append_evaluation_submission(record_dir, job_id)
+        print(f"Submitted {evaluation.suite.name} evaluation as job {job_id}")
+        print(f"Evaluation record: {record_dir}")
+
+
+def _add_evaluation_arguments(command: argparse.ArgumentParser) -> None:
+    command.add_argument("run", help="Path to an immutable training run-record directory")
+    command.add_argument("--stage", default="main", help="Training stage key (default: main)")
+    command.add_argument(
+        "--step",
+        default=None,
+        type=_evaluation_step,
+        help="Checkpoint iteration or 'latest' (default: latest)",
+    )
+    command.add_argument(
+        "--suite",
+        action="append",
+        required=True,
+        help="Named suite from evaluations/suites.yaml; repeat to submit multiple suites",
+    )
+    command.add_argument(
+        "--eval-config",
+        default=str(DEFAULT_EVALUATION_CONFIG),
+        help="Evaluation suite/backend YAML",
+    )
+    command.add_argument("--skip-checkpoint-check", action="store_true")
+    command.add_argument(
+        "--allow-unsafe-code",
+        action="store_true",
+        help="Allow suites such as HumanEval/MBPP that execute generated Python",
+    )
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="mask-exp")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -255,6 +346,24 @@ def build_parser() -> argparse.ArgumentParser:
     status = subparsers.add_parser("status", help="Show recorded and current Slurm status")
     status.add_argument("run", help="Path to the run-record directory")
     status.set_defaults(handler=cmd_status)
+
+    plan_eval = subparsers.add_parser(
+        "plan-eval", help="Resolve and print Spellbook evaluation jobs without writing files"
+    )
+    _add_evaluation_arguments(plan_eval)
+    plan_eval.set_defaults(handler=cmd_plan_eval)
+
+    render_eval = subparsers.add_parser(
+        "render-eval", help="Create immutable Spellbook evaluation records without submitting"
+    )
+    _add_evaluation_arguments(render_eval)
+    render_eval.set_defaults(handler=cmd_render_eval)
+
+    submit_eval = subparsers.add_parser(
+        "submit-eval", help="Create records and submit Spellbook lm-eval jobs"
+    )
+    _add_evaluation_arguments(submit_eval)
+    submit_eval.set_defaults(handler=cmd_submit_eval)
     return parser
 
 
