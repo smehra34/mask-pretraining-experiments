@@ -112,7 +112,7 @@ class ConfigTests(unittest.TestCase):
     def test_muon_sweep_is_short_unmasked_and_varies_optimizer_settings(self) -> None:
         name, experiments = load_collection(ROOT / "collections/1b_muon_sweep.yaml")
         self.assertEqual(name, "1b-muon-sweep")
-        self.assertEqual(len(experiments), 5)
+        self.assertEqual(len(experiments), 7)
         self.assertEqual(
             {experiment.main.environment["WANDB_PROJECT"] for experiment in experiments},
             {"mask_pretraining"},
@@ -148,6 +148,24 @@ class ConfigTests(unittest.TestCase):
                 for experiment in experiments
             },
             {"0.2", "0.5", "1.0"},
+        )
+        self.assertEqual(
+            {
+                (
+                    experiment.main.environment["PEAK_LR"],
+                    experiment.main.environment["MUON_EXTRA_SCALE_FACTOR"],
+                )
+                for experiment in experiments
+            },
+            {
+                ("0.0002", "1.0"),
+                ("0.0002", "0.2"),
+                ("0.0004", "1.0"),
+                ("0.0004", "0.5"),
+                ("0.0004", "0.2"),
+                ("0.0008", "1.0"),
+                ("0.0008", "0.2"),
+            },
         )
 
     def test_main_recipe_uses_selected_muon_configuration(self) -> None:
