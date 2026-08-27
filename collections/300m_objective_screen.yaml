@@ -1,0 +1,7 @@
+schema_version: 1
+name: 300m-objective-screen
+conditions:
+  - ../studies/300m_objective_screen/ntp.yaml
+  - ../studies/300m_objective_screen/mtp-2token.yaml
+  - ../studies/300m_objective_screen/meap-random-015.yaml
+  - ../studies/300m_objective_screen/meap-span-015-s5.yaml

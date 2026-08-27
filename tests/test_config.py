@@ -22,11 +22,15 @@ class ConfigTests(unittest.TestCase):
         self.addCleanup(self.environment.stop)
 
     def test_span_condition_resolves_all_stages(self) -> None:
-        experiment = load_experiment(ROOT / "studies/1b_masking_ablation/span_020_s2.yaml")
-        self.assertEqual(experiment.experiment_name, "1b-masking-ablation__span-020-s2")
-        self.assertEqual(experiment.main.environment["INPUT_MASK_RATIO"], "0.2")
-        self.assertEqual(experiment.main.environment["INPUT_MASK_SPAN_LENGTH"], "2")
-        self.assertEqual(len(experiment.cooldowns), 3)
+        experiment = load_experiment(
+            ROOT / "studies/1b_objective_screen/meap-span-015-s5.yaml"
+        )
+        self.assertEqual(
+            experiment.experiment_name, "1b-objective-screen__meap-span-015-s5"
+        )
+        self.assertEqual(experiment.main.environment["INPUT_MASK_RATIO"], "0.15")
+        self.assertEqual(experiment.main.environment["INPUT_MASK_SPAN_LENGTH"], "5")
+        self.assertEqual(len(experiment.cooldowns), 1)
         self.assertEqual(experiment.resolved["derived"]["persistent_save_interval"], 9537)
 
     def test_each_cooldown_branch_has_its_own_token_budget(self) -> None:
@@ -36,8 +40,8 @@ class ConfigTests(unittest.TestCase):
         )
         recipe["stages"]["cooldown"]["branches"] = [
             {"source_iteration": 9537, "tokens": 1000000000},
-            {"source_iteration": 47685, "tokens": 10000000000},
-            {"source_iteration": 95370, "tokens": 20000000000},
+            {"source_iteration": 19074, "tokens": 10000000000},
+            {"source_iteration": 34333, "tokens": 20000000000},
         ]
         condition = {"schema_version": 1, "recipe": "recipe.yaml", "name": "varied-lengths"}
         with tempfile.TemporaryDirectory() as directory_value:
@@ -51,10 +55,59 @@ class ConfigTests(unittest.TestCase):
         )
 
     def test_collection_has_unique_conditions(self) -> None:
-        name, experiments = load_collection(ROOT / "collections/1b_masking_ablation.yaml")
-        self.assertEqual(name, "1b-masking-ablation")
-        self.assertEqual(len(experiments), 5)
-        self.assertEqual(len({item.experiment_name for item in experiments}), 5)
+        for size in ("300m", "1b"):
+            name, experiments = load_collection(
+                ROOT / f"collections/{size}_objective_screen.yaml"
+            )
+            self.assertEqual(name, f"{size}-objective-screen")
+            self.assertEqual(len(experiments), 4)
+            self.assertEqual(len({item.experiment_name for item in experiments}), 4)
+            objectives = {
+                (
+                    item.main.environment["MTP_NUM_LAYERS"],
+                    item.main.environment["INPUT_MASK_RATIO"],
+                    item.main.environment["INPUT_MASK_STRATEGY"],
+                    item.main.environment["INPUT_MASK_SPAN_LENGTH"],
+                )
+                for item in experiments
+            }
+            self.assertEqual(
+                objectives,
+                {
+                    ("0", "0.0", "random", "1"),
+                    ("1", "0.0", "random", "1"),
+                    ("0", "0.15", "random", "1"),
+                    ("0", "0.15", "span", "5"),
+                },
+            )
+
+    def test_model_family_sizes_and_budgets_are_frozen(self) -> None:
+        small = load_experiment(ROOT / "studies/300m_objective_screen/ntp.yaml")
+        large = load_experiment(ROOT / "studies/1b_objective_screen/ntp.yaml")
+        self.assertEqual(
+            (
+                small.main.environment["NUM_LAYERS"],
+                small.main.environment["HIDDEN_SIZE"],
+                small.main.environment["FFN_HIDDEN_SIZE"],
+                small.main.environment["NUM_ATTENTION_HEADS"],
+                small.main.environment["NUM_QUERY_GROUPS"],
+            ),
+            ("24", "1024", "2816", "16", "4"),
+        )
+        self.assertEqual(
+            (
+                large.main.environment["NUM_LAYERS"],
+                large.main.environment["HIDDEN_SIZE"],
+                large.main.environment["FFN_HIDDEN_SIZE"],
+                large.main.environment["NUM_ATTENTION_HEADS"],
+                large.main.environment["NUM_QUERY_GROUPS"],
+            ),
+            ("24", "2048", "5632", "32", "8"),
+        )
+        self.assertEqual(small.main.environment["TRAIN_TOKENS"], "10800000000")
+        self.assertEqual(small.cooldowns[0].environment["COOLDOWN_TOKENS"], "1200000000")
+        self.assertEqual(large.main.environment["TRAIN_TOKENS"], "36000000000")
+        self.assertEqual(large.cooldowns[0].environment["COOLDOWN_TOKENS"], "4000000000")
 
     def test_muon_sweep_is_short_unmasked_and_varies_optimizer_settings(self) -> None:
         name, experiments = load_collection(ROOT / "collections/1b_muon_sweep.yaml")
@@ -96,6 +149,13 @@ class ConfigTests(unittest.TestCase):
             },
             {"0.2", "0.5", "1.0"},
         )
+
+    def test_main_recipe_uses_selected_muon_configuration(self) -> None:
+        experiment = load_experiment(ROOT / "studies/1b_objective_screen/ntp.yaml")
+        self.assertEqual(experiment.main.environment["WARMUP_STEPS"], "1000")
+        self.assertEqual(experiment.main.environment["PEAK_LR"], "0.0008")
+        self.assertEqual(experiment.main.environment["MIN_LR"], "8e-05")
+        self.assertEqual(experiment.main.environment["MUON_EXTRA_SCALE_FACTOR"], "0.2")
 
     def test_smoke_run_is_short_and_isolated(self) -> None:
         experiment = load_experiment(ROOT / "studies/test_run/test_run.yaml")

@@ -1,0 +1,10 @@
+schema_version: 1
+recipe: ../../recipes/300m_llama.yaml
+study: 300m-objective-screen
+name: meap-span-015-s5
+description: NTP with 15 percent input-token masking in non-overlapping spans of five.
+overrides:
+  MTP_NUM_LAYERS: 0
+  INPUT_MASK_RATIO: 0.15
+  INPUT_MASK_STRATEGY: span
+  INPUT_MASK_SPAN_LENGTH: 5

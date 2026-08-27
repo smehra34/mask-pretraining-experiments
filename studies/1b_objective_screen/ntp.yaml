@@ -1,0 +1,8 @@
+schema_version: 1
+recipe: ../../recipes/1b_llama.yaml
+study: 1b-objective-screen
+name: ntp
+description: Standard causal next-token prediction control at approximately 1.15B parameters.
+overrides:
+  MTP_NUM_LAYERS: 0
+  INPUT_MASK_RATIO: 0.0

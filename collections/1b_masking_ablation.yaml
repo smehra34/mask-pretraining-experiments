@@ -1,8 +1,0 @@
-schema_version: 1
-name: 1b-masking-ablation
-conditions:
-  - ../studies/1b_masking_ablation/vanilla.yaml
-  - ../studies/1b_masking_ablation/random_010.yaml
-  - ../studies/1b_masking_ablation/random_020.yaml
-  - ../studies/1b_masking_ablation/span_020_s2.yaml
-  - ../studies/1b_masking_ablation/span_020_s4.yaml

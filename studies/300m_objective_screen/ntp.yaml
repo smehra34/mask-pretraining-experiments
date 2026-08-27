@@ -1,0 +1,8 @@
+schema_version: 1
+recipe: ../../recipes/300m_llama.yaml
+study: 300m-objective-screen
+name: ntp
+description: Standard causal next-token prediction control at approximately 300M parameters.
+overrides:
+  MTP_NUM_LAYERS: 0
+  INPUT_MASK_RATIO: 0.0

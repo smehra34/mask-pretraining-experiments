@@ -1,0 +1,8 @@
+schema_version: 1
+recipe: ../../recipes/1b_llama.yaml
+study: 1b-objective-screen
+name: mtp-2token
+description: NTP plus one sequential Megatron MTP layer predicting one additional future token.
+overrides:
+  MTP_NUM_LAYERS: 1
+  INPUT_MASK_RATIO: 0.0

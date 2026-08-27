@@ -45,9 +45,9 @@ class RecordTests(unittest.TestCase):
         return load_experiment(condition_path)
 
     def test_command_contains_execution_context_and_exports(self) -> None:
-        experiment = load_experiment(ROOT / "studies/1b_masking_ablation/vanilla.yaml")
+        experiment = load_experiment(ROOT / "studies/1b_objective_screen/ntp.yaml")
         command = shell_command(experiment, experiment.main)
-        self.assertIn("--time=02:00:00", command)
+        self.assertTrue(any(value.startswith("--time=") for value in command))
         self.assertIn(
             "--chdir=/users/smehra/developer/mask-experiment-manager/submission",
             command,

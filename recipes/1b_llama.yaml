@@ -9,8 +9,11 @@ execution:
   artifacts_root: ../runs
   sbatch_args:
     - --account=infra01
-    - --time=02:00:00
-    - --nodes=1
+    - --reservation=SD-69241-apertus-1-5-0
+    # One allocation may not finish the 36B-token trunk; rolling checkpoints
+    # make it safe to resume while staying within the site wall-time limit.
+    - --time=12:00:00
+    - --nodes=2
     - --ntasks-per-node=1
     - --gpus-per-node=4
     - --cpus-per-task=72
@@ -25,18 +28,28 @@ environment:
   MEGATRON_LM_DIR: /users/smehra/developer/Megatron-LM
   DATASET_CACHE_DIR: "${SCRATCH}/datasets/cache-dclm-edu-mistral-v03"
   CHECKPOINT_STORAGE_ROOT: /capstor/scratch/cscs/smehra/megatron-runs
+  WANDB_PROJECT: mask_pretraining
   MBS: 8
   # MEAP Table 11 specifies a global batch of 256 sequences.
   GBS: 256
   SEQ_LEN: 4096
+  # Frozen approximately 1.15B member of the model family.
+  NUM_LAYERS: 24
+  HIDDEN_SIZE: 2048
+  FFN_HIDDEN_SIZE: 5632
+  NUM_ATTENTION_HEADS: 32
+  NUM_QUERY_GROUPS: 8
+  INIT_METHOD_STD: 0.013975424859373685
   # Use the modern Llama 3 base frequency from initial pretraining to ease
   # later long-context extension without enabling post-hoc RoPE scaling.
   ROTARY_BASE: 500000
-  # Approximately 10% of the paper's 190K-step, 200B-token run. Under WSD,
-  # this warmup is shared by the main trunk rather than restarted per budget.
-  WARMUP_STEPS: 19000
-  PEAK_LR: 0.0004
-  MIN_LR: 0.00004
+  # Reach the peak early enough that shorter-budget conditions spend most of
+  # training in WSD's stable phase. Cooldown branches do not restart warmup.
+  WARMUP_STEPS: 1000
+  # Selected from the 1.1B Muon pilot sweep: this setting had the lowest
+  # validation loss across nearly the entire run while remaining stable.
+  PEAK_LR: 0.0008
+  MIN_LR: 0.00008
   # The released MEAP pretraining scripts seed model/data setup with 3407.
   SEED: 3407
   LOG_INTERVAL: 1
@@ -45,6 +58,17 @@ environment:
   ATTENTION_DROPOUT: 0.0
   HIDDEN_DROPOUT: 0.0
   WEIGHT_DECAY: 0.05
+  OPTIMIZER: muon
+  MUON_MOMENTUM: 0.95
+  MUON_NESTEROV: true
+  MUON_SCALE_MODE: spectral
+  MUON_EXTRA_SCALE_FACTOR: 0.2
+  MUON_NUM_NS_STEPS: 5
+  MUON_SCALAR_OPTIMIZER: adam
+  MTP_NUM_LAYERS: 0
+  # TODO(mtp-calibration): 0.1 is Megatron's upstream default; freeze or tune
+  # this auxiliary-loss weight before confirmatory runs.
+  MTP_LOSS_SCALING_FACTOR: 0.1
   SAVE_EVERY_TOKENS: 10000000000
   ROLLING_CHECKPOINTS: true
   ROLLING_SAVE_EVERY_TOKENS: 1000000000
@@ -63,15 +87,9 @@ environment:
 
 stages:
   main:
-    train_tokens: 200000000000
+    # 36B stable-trunk tokens plus a 4B cooldown gives a 40B-token run.
+    train_tokens: 36000000000
   cooldown:
-    # Preserve the existing 10B-token WSD cooldown assumption. With a batch of
-    # 256, persistent saves are 9,537 iterations apart (~10B tokens), so these
-    # branches finish close to the paper's 40B, 60B, and 200B budgets.
     branches:
-      - source_iteration: 28611
-        tokens: 10000000000
-      - source_iteration: 47685
-        tokens: 10000000000
-      - source_iteration: 181203
-        tokens: 10000000000
+      - source_iteration: 34333
+        tokens: 4000000000

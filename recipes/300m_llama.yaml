@@ -1,17 +1,16 @@
 schema_version: 1
-name: 1b-muon-sweep
+name: 300m-llama
 
 execution:
   submission_script: ../submission/train_1b_llama.sh
-  project_name: mask_pretraining_muon_sweep
+  project_name: mask_pretraining
   experiment_name: "{study}__{condition}"
   checkpoint_root: "/capstor/scratch/cscs/smehra/megatron-runs/checkpoints/{project}/{experiment}"
   artifacts_root: ../runs
   sbatch_args:
     - --account=infra01
-    - --reservation=SD-69241-apertus-1-5-0
-    - --time=10:00:00
-    - --nodes=2
+    - --time=12:00:00
+    - --nodes=1
     - --ntasks-per-node=1
     - --gpus-per-node=4
     - --cpus-per-task=72
@@ -25,17 +24,22 @@ environment:
   DATASET_CACHE_DIR: "${SCRATCH}/datasets/cache-dclm-edu-mistral-v03"
   CHECKPOINT_STORAGE_ROOT: /capstor/scratch/cscs/smehra/megatron-runs
   WANDB_PROJECT: mask_pretraining
-  MBS: 8
+  MBS: 16
   GBS: 256
   SEQ_LEN: 4096
+  # Approximately 304M parameters with the 32,768-token tied vocabulary.
+  # This preserves the 1.1B member's depth, 64-d head size, 4:1 GQA ratio,
+  # SwiGLU FFN ratio, and all other architectural conventions.
   NUM_LAYERS: 24
-  HIDDEN_SIZE: 2048
-  FFN_HIDDEN_SIZE: 5632
-  NUM_ATTENTION_HEADS: 32
-  NUM_QUERY_GROUPS: 8
-  INIT_METHOD_STD: 0.013975424859373685
+  HIDDEN_SIZE: 1024
+  FFN_HIDDEN_SIZE: 2816
+  NUM_ATTENTION_HEADS: 16
+  NUM_QUERY_GROUPS: 4
+  INIT_METHOD_STD: 0.01976423537605237
   ROTARY_BASE: 500000
-  WARMUP_STEPS: 500
+  WARMUP_STEPS: 1000
+  # TODO(300m-optimizer-calibration): these are valid provisional settings,
+  # not a claim that the 1.1B sweep transfers optimally to the 300M model.
   PEAK_LR: 0.0004
   MIN_LR: 0.00004
   SEED: 3407
@@ -53,9 +57,11 @@ environment:
   MUON_NUM_NS_STEPS: 5
   MUON_SCALAR_OPTIMIZER: adam
   MTP_NUM_LAYERS: 0
+  # TODO(mtp-calibration): 0.1 is Megatron's upstream default; freeze or tune
+  # this auxiliary-loss weight before confirmatory runs.
   MTP_LOSS_SCALING_FACTOR: 0.1
-  SAVE_EVERY_TOKENS: 1000000000
-  ROLLING_CHECKPOINTS: false
+  SAVE_EVERY_TOKENS: 3000000000
+  ROLLING_CHECKPOINTS: true
   ROLLING_SAVE_EVERY_TOKENS: 1000000000
   COOLDOWN_STYLE: minus_sqrt
   INPUT_MASK_RATIO: 0.0
@@ -72,6 +78,9 @@ environment:
 
 stages:
   main:
-    # 4,769 optimizer steps per condition. Main mode deliberately exercises
-    # WSD warmup + stable training without introducing cooldown as a confound.
-    train_tokens: 5000000000
+    # 10.8B stable-trunk tokens plus a 1.2B cooldown gives 12B total.
+    train_tokens: 10800000000
+  cooldown:
+    branches:
+      - source_iteration: 10300
+        tokens: 1200000000

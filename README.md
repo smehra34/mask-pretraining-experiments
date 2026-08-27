@@ -8,7 +8,7 @@ model/data/stage settings; small condition files contain only ablation overrides
 
 ```text
 recipes/                         fixed model, data, Slurm, main/cooldown setup
-studies/1b_masking_ablation/     one YAML file per experimental condition
+studies/*_objective_screen/      one YAML file per experimental condition
 collections/                     ordered groups of conditions
 submission/                      submission scripts owned by this repository
 runs/                            generated, ignored, immutable run records
@@ -16,13 +16,11 @@ experiment_manager/              resolver, validation, records, and Slurm interf
 mask_exp.py                      local command-line entry point
 ```
 
-The included `1b_llama` recipe defines a modern approximately 1.15B-parameter Llama-family model
-and a 200B-token WSD trunk. It uses tied embeddings, 4:1 grouped-query attention, and Muon for
-eligible matrix weights with Adam for the remaining parameters. Explicit 10B-token cooldown
-branches from persistent milestones near 30B, 50B, and 190B produce models near 40B, 60B, and
-200B training-token budgets.
-Each condition gets a distinct experiment/checkpoint name, such as
-`1b-masking-ablation__span-020-s2`.
+The `300m_llama` and `1b_llama` recipes define frozen approximately 304M- and
+1.15B-parameter members of one Llama family. Both use 24 layers, 64-dimensional
+attention heads, 4:1 GQA, tied embeddings, and the same SwiGLU ratio. Their
+12B- and 40B-token budgets each end with a 10% WSD cooldown. Muon optimizer
+values marked TODO remain provisional until the queued calibration completes.
 
 ## Basic workflow
 
@@ -35,16 +33,16 @@ cd /users/smehra/developer/mask-experiment-manager
 export SCRATCH=/iopsstor/scratch/cscs/smehra
 
 # Validate one condition and print every exact sbatch command. This writes nothing.
-/usr/bin/python3.11 mask_exp.py plan studies/1b_masking_ablation/span_020_s2.yaml
+/usr/bin/python3.11 mask_exp.py plan studies/1b_objective_screen/meap-span-015-s5.yaml
 
 # Validate the complete ablation matrix. This writes nothing.
-/usr/bin/python3.11 mask_exp.py plan-collection collections/1b_masking_ablation.yaml
+/usr/bin/python3.11 mask_exp.py plan-collection collections/1b_objective_screen.yaml
 
 # Freeze a condition into an immutable, timestamped record without submitting it.
-/usr/bin/python3.11 mask_exp.py render studies/1b_masking_ablation/span_020_s2.yaml
+/usr/bin/python3.11 mask_exp.py render studies/1b_objective_screen/meap-span-015-s5.yaml
 
 # Recommended: submit the main stage first.
-/usr/bin/python3.11 mask_exp.py submit-main studies/1b_masking_ablation/span_020_s2.yaml
+/usr/bin/python3.11 mask_exp.py submit-main studies/1b_objective_screen/meap-span-015-s5.yaml
 ```
 
 `submit-main` prints the resulting run directory. Once desired source checkpoints exist, submit
@@ -154,12 +152,20 @@ datasets for reported results.
 
 ## Defining experiments
 
+The two objective screens each contain NTP, native Megatron two-token MTP
+(one sequential MTP layer), 15% random MEAP, and 15% span-5 MEAP:
+
+```bash
+/usr/bin/python3.11 mask_exp.py plan-collection collections/300m_objective_screen.yaml
+/usr/bin/python3.11 mask_exp.py plan-collection collections/1b_objective_screen.yaml
+```
+
 Copy a condition file and change `name`, `description`, and `overrides`:
 
 ```yaml
 schema_version: 1
 recipe: ../../recipes/1b_llama.yaml
-study: 1b-masking-ablation
+study: 1b-objective-screen
 name: span-030-s4
 description: Replace 30 percent of eligible inputs in spans of four.
 overrides:
@@ -214,10 +220,11 @@ After the main job completes, use the run directory printed by `submit-main`:
 /usr/bin/python3.11 mask_exp.py submit-cooldowns RUN_DIRECTORY
 ```
 
-The `1b_llama` launcher intentionally fixes the architecture and distributed topology. Recipes
-control data, schedules, batch sizes, seed, logging/evaluation cadence, regularization, masking,
-checkpointing, and Slurm resources. Add another family launcher and recipe when architecture or
-topology changes. The earlier `1B-meap-config.sh` and `1b_meap.yaml` are retained for compatibility.
+The shared launcher accepts only the frozen architectural values declared by a
+model-family recipe. Recipes also control data, schedules, batch sizes, seed,
+logging/evaluation cadence, regularization, masking, MTP, checkpointing, and
+Slurm resources. The earlier `1B-meap-config.sh` and `1b_meap.yaml` are retained
+for compatibility.
 
 To add another model or dataset, create another recipe rather than duplicating every condition.
 It can reference a different base submission script and declare a different environment and stage
@@ -234,7 +241,6 @@ Each render creates `runs/STUDY/CONDITION/TIMESTAMP-HASH/` containing:
 - `metadata.yaml`: source paths and Git state for this manager, the submission setup, and Megatron;
 - `jobs.yaml`: append-only submission history and job IDs.
 - `stages/STAGE/slurm/`: the sole Slurm stdout/stderr location for each submission;
-- `stages/STAGE/logging/`: TensorBoard and other reproducibility logs;
 - `stages/STAGE/debug/`: optional NCCL and masking diagnostics.
 
 Checkpoints and local W&B state are colocated under
