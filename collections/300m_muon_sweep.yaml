@@ -1,0 +1,10 @@
+schema_version: 1
+name: 300m-muon-sweep
+conditions:
+  - ../studies/300m_muon_sweep/lr_4e4_scale_1.yaml
+  - ../studies/300m_muon_sweep/lr_4e4_scale_02.yaml
+  - ../studies/300m_muon_sweep/lr_8e4_scale_1.yaml
+  - ../studies/300m_muon_sweep/lr_8e4_scale_05.yaml
+  - ../studies/300m_muon_sweep/lr_8e4_scale_02.yaml
+  - ../studies/300m_muon_sweep/lr_8e4_scale_01.yaml
+  - ../studies/300m_muon_sweep/lr_16e4_scale_02.yaml

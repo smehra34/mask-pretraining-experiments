@@ -175,6 +175,61 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(experiment.main.environment["MIN_LR"], "8e-05")
         self.assertEqual(experiment.main.environment["MUON_EXTRA_SCALE_FACTOR"], "0.2")
 
+    def test_300m_muon_sweep_matches_production_except_calibration_controls(self) -> None:
+        name, experiments = load_collection(ROOT / "collections/300m_muon_sweep.yaml")
+        production = load_experiment(ROOT / "studies/300m_objective_screen/ntp.yaml")
+        self.assertEqual(name, "300m-muon-sweep")
+        self.assertEqual(len(experiments), 7)
+
+        frozen_keys = (
+            "DATASETS",
+            "TOKENIZER_MODEL",
+            "MBS",
+            "GBS",
+            "SEQ_LEN",
+            "NUM_LAYERS",
+            "HIDDEN_SIZE",
+            "FFN_HIDDEN_SIZE",
+            "NUM_ATTENTION_HEADS",
+            "NUM_QUERY_GROUPS",
+            "INIT_METHOD_STD",
+            "WEIGHT_DECAY",
+            "OPTIMIZER",
+            "MUON_MOMENTUM",
+            "MUON_NESTEROV",
+            "MUON_SCALE_MODE",
+            "MUON_NUM_NS_STEPS",
+            "MUON_SCALAR_OPTIMIZER",
+        )
+        for experiment in experiments:
+            for key in frozen_keys:
+                self.assertEqual(
+                    experiment.main.environment[key], production.main.environment[key]
+                )
+            self.assertEqual(experiment.main.environment["TRAIN_TOKENS"], "1500000000")
+            self.assertEqual(experiment.main.environment["WARMUP_STEPS"], "150")
+            self.assertEqual(experiment.main.environment["INPUT_MASK_RATIO"], "0.0")
+            self.assertEqual(experiment.main.environment["MTP_NUM_LAYERS"], "0")
+
+        self.assertEqual(
+            {
+                (
+                    experiment.main.environment["PEAK_LR"],
+                    experiment.main.environment["MUON_EXTRA_SCALE_FACTOR"],
+                )
+                for experiment in experiments
+            },
+            {
+                ("0.0004", "1.0"),
+                ("0.0004", "0.2"),
+                ("0.0008", "1.0"),
+                ("0.0008", "0.5"),
+                ("0.0008", "0.2"),
+                ("0.0008", "0.1"),
+                ("0.0016", "0.2"),
+            },
+        )
+
     def test_smoke_run_is_short_and_isolated(self) -> None:
         experiment = load_experiment(ROOT / "studies/test_run/test_run.yaml")
         self.assertEqual(experiment.experiment_name, "mistral-v03-test_run")

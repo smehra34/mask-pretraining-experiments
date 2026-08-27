@@ -160,6 +160,18 @@ The two objective screens each contain NTP, native Megatron two-token MTP
 /usr/bin/python3.11 mask_exp.py plan-collection collections/1b_objective_screen.yaml
 ```
 
+Before launching the 300M objective screen, calibrate its Muon peak learning
+rate and spectral scale with the short, unmasked sweep:
+
+```bash
+/usr/bin/python3.11 mask_exp.py plan-collection collections/300m_muon_sweep.yaml
+```
+
+The sweep matches the production 300M architecture, data, batch size, sequence
+length, and regularization for 1.5B tokens. It brackets the selected 1B setting
+and the provisional 300M baseline while varying one optimizer dimension at a
+time around the transferred center.
+
 Copy a condition file and change `name`, `description`, and `overrides`:
 
 ```yaml

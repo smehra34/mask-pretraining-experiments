@@ -1,0 +1,9 @@
+schema_version: 1
+recipe: ../../recipes/300m_muon_sweep.yaml
+study: 300m-muon-sweep
+name: lr-16e4-scale-02
+description: Higher-LR bracket with 1.6e-3 peak LR and 0.2 spectral scale multiplier.
+overrides:
+  PEAK_LR: 0.0016
+  MIN_LR: 0.00016
+  MUON_EXTRA_SCALE_FACTOR: 0.2

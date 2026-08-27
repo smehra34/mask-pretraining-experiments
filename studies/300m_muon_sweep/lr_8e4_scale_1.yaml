@@ -1,0 +1,9 @@
+schema_version: 1
+recipe: ../../recipes/300m_muon_sweep.yaml
+study: 300m-muon-sweep
+name: lr-8e4-scale-1
+description: Unit-scale comparison at the transferred 8e-4 peak LR.
+overrides:
+  PEAK_LR: 0.0008
+  MIN_LR: 0.00008
+  MUON_EXTRA_SCALE_FACTOR: 1.0

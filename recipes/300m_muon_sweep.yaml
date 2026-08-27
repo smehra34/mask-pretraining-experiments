@@ -1,0 +1,80 @@
+schema_version: 1
+name: 300m-muon-sweep
+
+execution:
+  submission_script: ../submission/train_1b_llama.sh
+  project_name: mask_pretraining_muon_sweep
+  experiment_name: "{study}__{condition}"
+  checkpoint_root: "/capstor/scratch/cscs/smehra/megatron-runs/checkpoints/{project}/{experiment}"
+  artifacts_root: ../runs
+  sbatch_args:
+    - --account=infra01
+    - --time=04:00:00
+    - --nodes=1
+    - --ntasks-per-node=1
+    - --gpus-per-node=4
+    - --cpus-per-task=72
+    - --mem=460000
+    - --no-requeue
+
+environment:
+  DATASETS: /iopsstor/scratch/cscs/smehra/tokenized_datasets/dclm-edu__mistral-7b-v0.3
+  TOKENIZER_MODEL: mistralai/Mistral-7B-v0.3
+  MEGATRON_LM_DIR: /users/smehra/developer/Megatron-LM
+  DATASET_CACHE_DIR: "${SCRATCH}/datasets/cache-dclm-edu-mistral-v03"
+  CHECKPOINT_STORAGE_ROOT: /capstor/scratch/cscs/smehra/megatron-runs
+  WANDB_PROJECT: mask_pretraining
+  # Match the production 300M recipe except for sweep length, warmup, and the
+  # two optimizer variables explicitly changed by condition files.
+  MBS: 16
+  GBS: 256
+  SEQ_LEN: 4096
+  NUM_LAYERS: 24
+  HIDDEN_SIZE: 1024
+  FFN_HIDDEN_SIZE: 2816
+  NUM_ATTENTION_HEADS: 16
+  NUM_QUERY_GROUPS: 4
+  INIT_METHOD_STD: 0.01976423537605237
+  ROTARY_BASE: 500000
+  # 150 / 1,431 sweep steps closely matches the production warmup fraction
+  # of 1,000 / 10,300 steps.
+  WARMUP_STEPS: 150
+  PEAK_LR: 0.0008
+  MIN_LR: 0.00008
+  SEED: 3407
+  LOG_INTERVAL: 1
+  EVAL_INTERVAL: 100
+  EVAL_ITERS: 10
+  ATTENTION_DROPOUT: 0.0
+  HIDDEN_DROPOUT: 0.0
+  WEIGHT_DECAY: 0.05
+  OPTIMIZER: muon
+  MUON_MOMENTUM: 0.95
+  MUON_NESTEROV: true
+  MUON_SCALE_MODE: spectral
+  MUON_EXTRA_SCALE_FACTOR: 0.2
+  MUON_NUM_NS_STEPS: 5
+  MUON_SCALAR_OPTIMIZER: adam
+  MTP_NUM_LAYERS: 0
+  MTP_LOSS_SCALING_FACTOR: 0.1
+  SAVE_EVERY_TOKENS: 500000000
+  ROLLING_CHECKPOINTS: false
+  ROLLING_SAVE_EVERY_TOKENS: 500000000
+  COOLDOWN_STYLE: minus_sqrt
+  INPUT_MASK_RATIO: 0.0
+  INPUT_MASK_STRATEGY: random
+  INPUT_MASK_SPAN_LENGTH: 1
+  INPUT_MASK_TOKEN: "[control_768]"
+  INPUT_MASK_DEBUG: false
+  INPUT_MASK_DEBUG_TOKENS: 128
+  LOG_NCCL: false
+  NSYS_PROFILER: false
+  MOCK_DATA: false
+  BACKUP_CODEBASE: false
+  RUN_CAPSTOR_DIAGNOSTICS: false
+
+stages:
+  main:
+    # Approximately 14% of the 10.8B-token production trunk: long enough to
+    # compare post-warmup validation trends without paying for full runs.
+    train_tokens: 1500000000
