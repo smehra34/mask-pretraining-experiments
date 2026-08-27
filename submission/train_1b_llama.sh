@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# This launcher defines the fixed 1B Llama-family architecture and distributed
-# topology. Recipes supply ordinary experimental, data, schedule, logging, and
-# Slurm variation. Create another family launcher for architectural changes.
+# This launcher defines a fixed Llama-family design and distributed topology.
+# Recipes select a frozen size within that family and supply experimental,
+# data, schedule, logging, and Slurm variation.
 
 set -euo pipefail
 
@@ -55,6 +55,14 @@ SOURCE_CHECKPOINT_DIR=${SOURCE_CHECKPOINT_DIR:-}
 CP_SIZE=${CP_SIZE:-1}
 CP_COMM_TYPE=${CP_COMM_TYPE:-p2p}
 ROTARY_BASE=${ROTARY_BASE:-500000}
+NUM_LAYERS=${NUM_LAYERS:-24}
+HIDDEN_SIZE=${HIDDEN_SIZE:-2048}
+FFN_HIDDEN_SIZE=${FFN_HIDDEN_SIZE:-5632}
+NUM_ATTENTION_HEADS=${NUM_ATTENTION_HEADS:-32}
+NUM_QUERY_GROUPS=${NUM_QUERY_GROUPS:-8}
+INIT_METHOD_STD=${INIT_METHOD_STD:-0.013975424859373685}
+MTP_NUM_LAYERS=${MTP_NUM_LAYERS:-0}
+MTP_LOSS_SCALING_FACTOR=${MTP_LOSS_SCALING_FACTOR:-0.1}
 
 AUTO_JOB_REQUEUE=${AUTO_JOB_REQUEUE:-false}
 LOG_NCCL=${LOG_NCCL:-false}
@@ -215,6 +223,7 @@ mkdir -p "$SAVE_DIR" "$DEBUG_DIR" "$WANDB_DIR"
 echo "Mode: $RUN_MODE"
 echo "Training target: $TRAIN_SAMPLES samples ($((TRAIN_SAMPLES * SEQ_LEN)) tokens)"
 echo "Input masking: ratio=$INPUT_MASK_RATIO strategy=$INPUT_MASK_STRATEGY span_length=$INPUT_MASK_SPAN_LENGTH token=$INPUT_MASK_TOKEN"
+echo "MTP: layers=$MTP_NUM_LAYERS loss_scaling_factor=$MTP_LOSS_SCALING_FACTOR"
 echo "Checkpoint interval: $SAVE_INTERVAL iterations ($ACTUAL_SAVE_TOKENS tokens; requested $SAVE_EVERY_TOKENS)"
 if [[ $ROLLING_CHECKPOINTS == true ]]; then
   echo "Rolling recovery interval: $ROLLING_SAVE_INTERVAL iterations ($ACTUAL_ROLLING_SAVE_TOKENS tokens; requested $ROLLING_SAVE_EVERY_TOKENS)"
@@ -276,15 +285,12 @@ TRANSFORMER_ENGINE_ARGS=(
 )
 
 NETWORK_SIZE_ARGS=(
-  # MEAP 1.1B architecture. The paper's prose gives 24 layers and 32 heads;
-  # Table 12 appears to transpose those two values (2048 is not divisible by 24).
-  --num-layers 24
-  --hidden-size 2048
-  --ffn-hidden-size 5632
-  --num-attention-heads 32
+  --num-layers "$NUM_LAYERS"
+  --hidden-size "$HIDDEN_SIZE"
+  --ffn-hidden-size "$FFN_HIDDEN_SIZE"
+  --num-attention-heads "$NUM_ATTENTION_HEADS"
   --group-query-attention
-  # Conventional 4:1 grouped-query attention (32 query heads, 8 KV heads).
-  --num-query-groups 8
+  --num-query-groups "$NUM_QUERY_GROUPS"
   --max-position-embeddings "$SEQ_LEN"
   --position-embedding-type rope
   --rotary-base "$ROTARY_BASE"
@@ -331,6 +337,17 @@ TRAINING_ARGS=(
   --manual-gc-interval 100
 )
 
+[[ $MTP_NUM_LAYERS =~ ^[0-9]+$ ]] || {
+  echo "MTP_NUM_LAYERS must be a non-negative integer" >&2
+  exit 2
+}
+if ((MTP_NUM_LAYERS > 0)); then
+  TRAINING_ARGS+=(
+    --mtp-num-layers "$MTP_NUM_LAYERS"
+    --mtp-loss-scaling-factor "$MTP_LOSS_SCALING_FACTOR"
+  )
+fi
+
 if [[ $OPTIMIZER == muon ]]; then
   [[ $MUON_NESTEROV == true || $MUON_NESTEROV == false ]] || {
     echo "MUON_NESTEROV must be 'true' or 'false'" >&2
@@ -350,8 +367,7 @@ fi
 
 INITIALIZATION_ARGS=(
   --seed "$SEED"
-  # sqrt(2 / 5 / hidden_size), matching MEAP's base Linear/Embedding init.
-  --init-method-std 0.013975424859373685
+  --init-method-std "$INIT_METHOD_STD"
 )
 
 LEARNING_RATE_ARGS=("${LR_ARGS[@]}")

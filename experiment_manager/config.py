@@ -168,6 +168,18 @@ def _validate_experiment_controls(env: dict[str, str]) -> None:
         raise ConfigError("WEIGHT_DECAY must be numeric") from exc
     if weight_decay < 0.0:
         raise ConfigError("WEIGHT_DECAY must be non-negative")
+    try:
+        mtp_num_layers = int(env.get("MTP_NUM_LAYERS", "0"))
+    except ValueError as exc:
+        raise ConfigError("MTP_NUM_LAYERS must be an integer") from exc
+    if mtp_num_layers < 0:
+        raise ConfigError("MTP_NUM_LAYERS must be non-negative")
+    try:
+        mtp_loss_weight = float(env.get("MTP_LOSS_SCALING_FACTOR", "0.1"))
+    except ValueError as exc:
+        raise ConfigError("MTP_LOSS_SCALING_FACTOR must be numeric") from exc
+    if mtp_num_layers > 0 and mtp_loss_weight <= 0.0:
+        raise ConfigError("MTP_LOSS_SCALING_FACTOR must be positive when MTP is enabled")
 
 
 def load_experiment(config_path: str | Path) -> ResolvedExperiment:
