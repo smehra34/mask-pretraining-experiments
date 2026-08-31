@@ -175,6 +175,15 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(experiment.main.environment["MIN_LR"], "8e-05")
         self.assertEqual(experiment.main.environment["MUON_EXTRA_SCALE_FACTOR"], "0.2")
 
+    def test_objective_screens_tolerate_transient_cluster_stalls(self) -> None:
+        for size in ("300m", "1b"):
+            experiment = load_experiment(
+                ROOT / f"studies/{size}_objective_screen/ntp.yaml"
+            )
+            self.assertEqual(
+                experiment.main.environment["DISTRIBUTED_TIMEOUT_MINUTES"], "60"
+            )
+
     def test_300m_muon_sweep_matches_production_except_calibration_controls(self) -> None:
         name, experiments = load_collection(ROOT / "collections/300m_muon_sweep.yaml")
         production = load_experiment(ROOT / "studies/300m_objective_screen/ntp.yaml")

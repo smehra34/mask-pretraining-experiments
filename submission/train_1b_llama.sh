@@ -30,6 +30,7 @@ SEED=${SEED:-28}
 LOG_INTERVAL=${LOG_INTERVAL:-1}
 EVAL_INTERVAL=${EVAL_INTERVAL:-100}
 EVAL_ITERS=${EVAL_ITERS:-10}
+DISTRIBUTED_TIMEOUT_MINUTES=${DISTRIBUTED_TIMEOUT_MINUTES:-60}
 ATTENTION_DROPOUT=${ATTENTION_DROPOUT:-0.0}
 HIDDEN_DROPOUT=${HIDDEN_DROPOUT:-0.0}
 WEIGHT_DECAY=${WEIGHT_DECAY:-0.1}
@@ -391,6 +392,10 @@ MIXED_PRECISION_ARGS=(
 )
 
 DISTRIBUTED_ARGS=(
+  # CSCS storage/host stalls have exceeded Megatron's ten-minute default while
+  # otherwise healthy jobs recovered. Keep the timeout site-configurable so a
+  # transient pause does not turn into a fatal NCCL watchdog abort.
+  --distributed-timeout-minutes "$DISTRIBUTED_TIMEOUT_MINUTES"
   # Fixed topology for this model-family launcher.
   --tensor-model-parallel-size 1
   --pipeline-model-parallel-size 1

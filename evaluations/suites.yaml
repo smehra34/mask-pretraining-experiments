@@ -14,7 +14,6 @@ backend:
   hf_home: /iopsstor/scratch/cscs/smehra/huggingface/lm-eval-v0.4.12
   container_edf: test-env
   account: infra01
-  reservation: SD-69241-apertus-1-5-0
   nodes: 1
   gpus_per_node: 4
   devices: 4
@@ -37,7 +36,7 @@ suites:
   core:
     description: Relatively cheap likelihood-based general and commonsense evaluation.
     tasks: [hellaswag, piqa, winogrande, arc_easy, arc_challenge, openbookqa, boolq]
-    run_time: 02:00:00
+    run_time: 00:30:00
 
   math:
     description: Focused deterministic generative math evaluation for primary checkpoints.

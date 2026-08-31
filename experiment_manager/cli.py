@@ -30,6 +30,18 @@ from experiment_manager.slurm import query, submit, with_dependency
 DEFAULT_EVALUATION_CONFIG = Path(__file__).resolve().parents[1] / "evaluations/suites.yaml"
 
 
+def _submission_overrides(command: list[str], args: argparse.Namespace) -> list[str]:
+    """Apply explicit scheduler-only overrides without changing a frozen run config."""
+    actual = list(command)
+    if getattr(args, "without_reservation", False):
+        actual = [item for item in actual if not item.startswith("--reservation=")]
+    walltime = getattr(args, "sbatch_time", None)
+    if walltime:
+        actual = [item for item in actual if not item.startswith("--time=")]
+        actual.insert(1, f"--time={walltime}")
+    return actual
+
+
 def _print_plan(experiment) -> None:
     derived = experiment.resolved["derived"]
     print(f"Experiment: {experiment.experiment_name}")
@@ -145,7 +157,7 @@ def cmd_submit_cooldowns(args: argparse.Namespace) -> None:
                 f"Use 'resume {run_dir} --stage {stage['key']}' instead."
             )
     for stage in cooldowns:
-        command = command_from_record(resolved, stage)
+        command = _submission_overrides(command_from_record(resolved, stage), args)
         job_id = submit(command, dependency=args.dependency)
         submitted_command = with_dependency(command, args.dependency)
         append_submission(
@@ -198,7 +210,7 @@ def cmd_resume(args: argparse.Namespace) -> None:
         checkpoint = _source_checkpoint(resolved, int(stage["source_iteration"]))
         if not checkpoint.is_dir():
             raise RuntimeError(f"cooldown source checkpoint is missing: {checkpoint}")
-    command = command_from_record(resolved, stage)
+    command = _submission_overrides(command_from_record(resolved, stage), args)
     job_id = submit(command)
     append_submission(
         run_dir, stage_key=stage["key"], job_id=job_id, command=command, action="resume"
@@ -335,12 +347,16 @@ def build_parser() -> argparse.ArgumentParser:
     cooldowns.add_argument("run", help="Path to the run-record directory")
     cooldowns.add_argument("--dependency", help="Submit with afterok dependency on this job ID")
     cooldowns.add_argument("--skip-checkpoint-check", action="store_true")
+    cooldowns.add_argument("--without-reservation", action="store_true")
+    cooldowns.add_argument("--sbatch-time", help="Override frozen Slurm walltime (HH:MM:SS)")
     cooldowns.set_defaults(handler=cmd_submit_cooldowns)
 
     resume = subparsers.add_parser("resume", help="Resubmit one exact recorded stage")
     resume.add_argument("run", help="Path to the run-record directory")
     resume.add_argument("--stage", required=True, help="main or cooldown-from-NNNNNNN")
     resume.add_argument("--skip-checkpoint-check", action="store_true")
+    resume.add_argument("--without-reservation", action="store_true")
+    resume.add_argument("--sbatch-time", help="Override frozen Slurm walltime (HH:MM:SS)")
     resume.set_defaults(handler=cmd_resume)
 
     status = subparsers.add_parser("status", help="Show recorded and current Slurm status")

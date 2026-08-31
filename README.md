@@ -123,6 +123,17 @@ an explicit checkpoint iteration or the stage's latest checkpoint:
   --stage main --step latest --suite core --suite math
 ```
 
+Frozen training records can retain scheduler settings that later become stale.
+`resume` and `submit-cooldowns` therefore accept explicit scheduler-only
+overrides without changing the frozen scientific configuration:
+
+```bash
+/usr/bin/python3.11 mask_exp.py resume RUN_DIRECTORY --stage main \
+  --without-reservation --sbatch-time 01:15:00
+```
+
+The exact overridden command is appended to the run's submission history.
+
 Available suites are deliberately cost-tiered:
 
 - `smoke`: 20 examples each from HellaSwag, ARC-Easy, and GSM8K. These limited

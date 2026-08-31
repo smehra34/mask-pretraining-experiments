@@ -38,14 +38,15 @@ environment:
   INIT_METHOD_STD: 0.01976423537605237
   ROTARY_BASE: 500000
   WARMUP_STEPS: 1000
-  # TODO(300m-optimizer-calibration): these are valid provisional settings,
-  # not a claim that the 1.1B sweep transfers optimally to the 300M model.
-  PEAK_LR: 0.0004
-  MIN_LR: 0.00004
+  # Selected from the matched-condition 300M Muon sweep. The 1.6e-3,
+  # scale-0.2 condition had the lowest validation loss at iteration 1,400.
+  PEAK_LR: 0.0016
+  MIN_LR: 0.00008
   SEED: 3407
   LOG_INTERVAL: 1
   EVAL_INTERVAL: 100
   EVAL_ITERS: 10
+  DISTRIBUTED_TIMEOUT_MINUTES: 60
   ATTENTION_DROPOUT: 0.0
   HIDDEN_DROPOUT: 0.0
   WEIGHT_DECAY: 0.05
@@ -53,7 +54,7 @@ environment:
   MUON_MOMENTUM: 0.95
   MUON_NESTEROV: true
   MUON_SCALE_MODE: spectral
-  MUON_EXTRA_SCALE_FACTOR: 1.0
+  MUON_EXTRA_SCALE_FACTOR: 0.2
   MUON_NUM_NS_STEPS: 5
   MUON_SCALAR_OPTIMIZER: adam
   MTP_NUM_LAYERS: 0

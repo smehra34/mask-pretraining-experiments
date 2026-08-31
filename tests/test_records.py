@@ -8,6 +8,7 @@ from unittest.mock import patch
 
 import yaml
 
+from experiment_manager.cli import _submission_overrides
 from experiment_manager.config import load_experiment
 from experiment_manager.records import create_run_record, load_run_record, shell_command
 
@@ -17,6 +18,20 @@ SCRATCH = "/iopsstor/scratch/cscs/smehra"
 
 
 class RecordTests(unittest.TestCase):
+    def test_scheduler_overrides_remove_expired_reservation_and_replace_time(self) -> None:
+        args = type("Args", (), {"without_reservation": True, "sbatch_time": "01:15:00"})()
+        command = [
+            "sbatch",
+            "--account=infra01",
+            "--reservation=expired",
+            "--time=12:00:00",
+            "launcher.sh",
+        ]
+        self.assertEqual(
+            _submission_overrides(command, args),
+            ["sbatch", "--time=01:15:00", "--account=infra01", "launcher.sh"],
+        )
+
     def setUp(self) -> None:
         self.environment = patch.dict(os.environ, {"SCRATCH": SCRATCH})
         self.environment.start()

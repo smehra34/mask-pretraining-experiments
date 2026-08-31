@@ -9,7 +9,6 @@ execution:
   artifacts_root: ../runs
   sbatch_args:
     - --account=infra01
-    - --reservation=SD-69241-apertus-1-5-0
     # One allocation may not finish the 36B-token trunk; rolling checkpoints
     # make it safe to resume while staying within the site wall-time limit.
     - --time=12:00:00
@@ -55,6 +54,7 @@ environment:
   LOG_INTERVAL: 1
   EVAL_INTERVAL: 100
   EVAL_ITERS: 10
+  DISTRIBUTED_TIMEOUT_MINUTES: 60
   ATTENTION_DROPOUT: 0.0
   HIDDEN_DROPOUT: 0.0
   WEIGHT_DECAY: 0.05
