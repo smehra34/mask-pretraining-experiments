@@ -49,6 +49,22 @@ suites:
     run_time: 03:00:00
     unsafe_code: true
 
+  paloma:
+    evaluator: paloma
+    description: Tokenizer-aware document-level Paloma fit across all available domains.
+    paloma_data_root: /iopsstor/scratch/cscs/smehra/eval_datasets/paloma
+    paloma_split: test
+    run_time: 06:00:00
+
+  paloma_smoke:
+    evaluator: paloma
+    description: Small Paloma integration check; not a reportable benchmark result.
+    paloma_data_root: /iopsstor/scratch/cscs/smehra/eval_datasets/paloma
+    paloma_split: test
+    paloma_sources: [wikitext_103]
+    paloma_limit_tokens: 10000
+    run_time: 00:30:00
+
 dataset_prefetch:
   hellaswag: [Rowan/hellaswag]
   piqa: [baber/piqa]

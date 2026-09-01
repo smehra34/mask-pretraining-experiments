@@ -25,7 +25,7 @@ EVAL_CONFIG = ROOT / "evaluations/suites.yaml"
 
 class EvaluationTests(unittest.TestCase):
     def setUp(self) -> None:
-        self.environment = patch.dict(os.environ, {"SCRATCH": SCRATCH})
+        self.environment = patch.dict(os.environ, {"SCRATCH": SCRATCH, "PALOMA_DATA_ROOT": "/tmp/paloma"})
         self.environment.start()
         self.addCleanup(self.environment.stop)
 
@@ -64,11 +64,17 @@ class EvaluationTests(unittest.TestCase):
         _, suites, _ = load_evaluation_config(EVAL_CONFIG)
         self.assertEqual(
             set(suites),
-            {"smoke", "core", "math", "code"},
+            {"smoke", "core", "math", "code", "paloma", "paloma_smoke"},
         )
         self.assertEqual(suites["smoke"].limit, 20)
         self.assertFalse(suites["math"].unsafe_code)
         self.assertTrue(suites["code"].unsafe_code)
+        self.assertEqual(suites["paloma"].evaluator, "paloma")
+        self.assertEqual(
+            suites["paloma"].paloma_data_root,
+            "/iopsstor/scratch/cscs/smehra/eval_datasets/paloma",
+        )
+        self.assertEqual(suites["paloma_smoke"].paloma_limit_tokens, 10000)
 
     def test_resolves_latest_native_megatron_checkpoint(self) -> None:
         with tempfile.TemporaryDirectory() as directory_value:

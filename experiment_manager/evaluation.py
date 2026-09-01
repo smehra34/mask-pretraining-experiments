@@ -30,6 +30,11 @@ class EvaluationSuite:
     log_samples: bool
     write_out: bool
     unsafe_code: bool
+    evaluator: str
+    paloma_data_root: str
+    paloma_split: str
+    paloma_sources: tuple[str, ...]
+    paloma_limit_tokens: int | None
 
 
 @dataclass(frozen=True)
@@ -116,8 +121,9 @@ def load_evaluation_config(path: str | Path) -> tuple[dict[str, Any], dict[str, 
     for name, raw in suites_value.items():
         if not isinstance(name, str) or not isinstance(raw, dict):
             raise ValueError("each evaluation suite must be a named mapping")
-        tasks = raw.get("tasks")
-        if not isinstance(tasks, list) or not tasks or not all(isinstance(task, str) for task in tasks):
+        evaluator = str(raw.get("evaluator", "lm_eval"))
+        tasks = raw.get("tasks", [])
+        if (evaluator == "lm_eval" and (not isinstance(tasks, list) or not tasks)) or not isinstance(tasks, list) or not all(isinstance(task, str) for task in tasks):
             raise ValueError(f"evaluation suite {name!r} must contain a non-empty task list")
         limit = raw.get("limit")
         if limit is not None and (isinstance(limit, bool) or not isinstance(limit, (int, float)) or limit <= 0):
@@ -133,6 +139,11 @@ def load_evaluation_config(path: str | Path) -> tuple[dict[str, Any], dict[str, 
             log_samples=bool(raw.get("log_samples", False)),
             write_out=bool(raw.get("write_out", False)),
             unsafe_code=bool(raw.get("unsafe_code", False)),
+            evaluator=evaluator,
+            paloma_data_root=_expand(str(raw.get("paloma_data_root", ""))) if raw.get("paloma_data_root") else "",
+            paloma_split=str(raw.get("paloma_split", "test")),
+            paloma_sources=tuple(str(x) for x in raw.get("paloma_sources", [])),
+            paloma_limit_tokens=raw.get("paloma_limit_tokens"),
         )
 
     resolved_prefetch: dict[str, list[str]] = {}
@@ -187,6 +198,10 @@ def resolve_evaluation(
             f"suite {suite.name!r} executes generated code; pass --allow-unsafe-code "
             "only after accepting the isolation requirements"
         )
+    if suite.evaluator not in {"lm_eval", "paloma"}:
+        raise ValueError(f"unsupported evaluation evaluator {suite.evaluator!r}")
+    if suite.evaluator == "paloma" and not suite.paloma_data_root:
+        raise ValueError("Paloma suite must define paloma_data_root")
 
     checkpoint_dir = _checkpoint_dir(resolved, stage)
     step = _latest_step(checkpoint_dir) if checkpoint_step is None else checkpoint_step
@@ -298,7 +313,11 @@ def spellbook_config(evaluation: ResolvedEvaluation, *, log_dir: Path):
             ]
         ),
     }
-    python_paths = [str(runtime_deps)] if runtime_deps else []
+    # Paloma is implemented as a Spellbook module (``evals.paloma_eval``),
+    # so the Spellbook checkout itself must be importable inside the job.
+    python_paths = [str(backend["spellbook_path"])]
+    if runtime_deps:
+        python_paths.append(str(runtime_deps))
     lm_eval_source = backend.get("lm_eval_source")
     if lm_eval_source:
         python_paths.append(str(lm_eval_source))
@@ -318,6 +337,11 @@ def spellbook_config(evaluation: ResolvedEvaluation, *, log_dir: Path):
         megatron_path=str(backend["megatron_path"]),
         megatron_commit=str(megatron_commit),
         tasks=list(evaluation.suite.tasks),
+        evaluator=evaluation.suite.evaluator,
+        paloma_data_root=evaluation.suite.paloma_data_root,
+        paloma_split=evaluation.suite.paloma_split,
+        paloma_sources=list(evaluation.suite.paloma_sources),
+        paloma_limit_tokens=evaluation.suite.paloma_limit_tokens,
         batch_size=int(backend["batch_size"]),
         cache_requests="true",
         limit=evaluation.suite.limit,

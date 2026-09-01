@@ -143,6 +143,11 @@ Available suites are deliberately cost-tiered:
 - `math`: the complete deterministic GSM8K evaluation for primary checkpoints.
 - `code`: complete MBPP and HumanEval pass@1 evaluation. This executes generated
   Python and is rejected unless `--allow-unsafe-code` is passed.
+- `paloma`: specialized document-level language-model-fit evaluation over the
+  Paloma JSONL corpus. It uses the evaluated checkpoint's tokenizer, preserves
+  document boundaries, and reports per-domain perplexity and bits-per-byte.
+  The configured dataset path is
+  `/iopsstor/scratch/cscs/smehra/eval_datasets/paloma`.
 
 Code evaluation is not made safe merely by the opt-in flag. Run it only in an
 appropriately isolated environment with no valuable credentials or writable
@@ -160,6 +165,12 @@ For the initial scaling screen, run `core` at intermediate persistent
 checkpoints and run the complete `math` and `code` suites only for the primary
 final checkpoints. This controls generation cost without using truncated
 datasets for reported results.
+
+Paloma is not an lm-evaluation-harness task collection: its evaluator is a
+document-level causal-language-model pass implemented in Spellbook. The
+published Paloma corpus is already stratified to approximately 100k tokens per
+domain; current experiments evaluate it without decontamination and therefore
+should be interpreted as within-study diagnostics.
 
 ## Defining experiments
 

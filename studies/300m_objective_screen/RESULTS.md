@@ -156,3 +156,21 @@ require additional seeds and preferably a prespecified aggregate or a smaller
 set of sufficiently sensitive tasks. Based on the current data, claims should
 be limited to equivalence within the resolution of this single-seed screen and
 the consistent benefit observed after cooldown.
+
+## Paloma evaluation
+
+Final cooldown checkpoints were evaluated on the Paloma test split (68.8M
+tokens across 571 domains) with the training tokenizer. Lower is better.
+
+| Objective | Perplexity | Bits/byte | Macro-domain PPL |
+|---|---:|---:|---:|
+| NTP | 13.272 | 1.0299 | 17.551 |
+| MTP | **13.265** | **1.0297** | 17.925 |
+| Random masking | 13.704 | 1.0427 | 18.146 |
+| Span masking | 14.248 | 1.0581 | 19.305 |
+
+MTP and NTP are effectively tied on token-weighted Paloma metrics. Random
+masking is about 3.3% worse than NTP in perplexity, while span masking is about
+7.4% worse. MTP improves perplexity on 364/571 domains, but losses on some
+high-loss domains offset those gains in the aggregate. Objective effects are
+therefore small at this scale.

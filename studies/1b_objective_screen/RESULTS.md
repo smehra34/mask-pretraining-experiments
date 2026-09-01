@@ -122,3 +122,28 @@ Span masking is the most interesting non-trivial result: its downstream
 performance is competitive despite its worse objective loss. Follow-up work
 on masking should evaluate additional seeds and should avoid using raw
 validation loss to compare masked and unmasked objectives directly.
+
+## Paloma evaluation
+
+Final cooldown checkpoints were evaluated on the Paloma test split (68.8M
+tokens across 571 domains) with the training tokenizer. Lower is better.
+
+| Objective | Perplexity | Bits/byte | Macro-domain PPL |
+|---|---:|---:|---:|
+| NTP | 10.636 | 0.9417 | 14.997 |
+| MTP | **10.343** | **0.9306** | 14.244 |
+| Random masking | 10.540 | 0.9381 | **14.024** |
+| Span masking | 11.437 | 0.9706 | 15.209 |
+
+MTP improves perplexity by about 2.8% relative to NTP and wins on 562/571
+domains. Random masking is modestly better than NTP in aggregate and has the
+best macro-domain score, suggesting a possible scale-dependent benefit. Span
+masking remains clearly worse.
+
+## Scale comparison
+
+MTP is effectively neutral at 300M but clearly beneficial at 1.1B. Random
+masking changes from a clear regression at 300M to a small aggregate improvement
+at 1.1B, while span masking is harmful at both scales. This motivates testing
+3B, while keeping claims provisional until downstream evaluations and additional
+seeds are available.
