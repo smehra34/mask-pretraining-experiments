@@ -59,6 +59,56 @@ indistinguishable. Random masking has a lower strict-match score, but the
 difference disappears under flexible extraction, suggesting an answer-format
 difference rather than weaker mathematical ability.
 
+## Paired evaluation-example uncertainty
+
+The final-checkpoint core evaluations were rerun with sample logging and
+matched by task name, document ID, document hash, task-configuration hash, and
+dataset fingerprint. All 20,465 examples match uniquely for every condition.
+The table uses the stated first-minus-second direction and 10,000 deterministic
+paired bootstrap resamples (seed 12345). Accuracy is the task's reportable
+metric: length-normalized accuracy where lm-eval defines it and raw accuracy
+otherwise.
+
+| Comparison | Core macro difference | Paired-bootstrap 95% CI |
+|---|---:|---:|
+| NTP − MTP | -1.64 points | [-2.43, -0.85] |
+| NTP − random masking | -0.62 points | [-1.45, +0.19] |
+| NTP − span masking | -0.45 points | [-1.27, +0.34] |
+| MTP − random masking | +1.02 points | [+0.21, +1.82] |
+| MTP − span masking | +1.19 points | [+0.37, +2.01] |
+| Random masking − span masking | +0.17 points | [-0.61, +0.94] |
+
+MTP's advantage over each of the other three objectives is distinguishable
+from evaluation-example noise for these fixed checkpoints. NTP and both masking
+methods remain mutually unresolved. For the primary MTP-versus-NTP comparison,
+the task-level results are:
+
+| Task | MTP − NTP accuracy (95% CI) | Only MTP/NTP correct | Exact McNemar p | Raw margin difference (95% CI) |
+|---|---:|---:|---:|---:|
+| ARC-Challenge | +2.47 [+0.26, +4.78] | 105/76 | 0.037 | +0.243 [+0.110, +0.374] |
+| ARC-Easy | +2.48 [+0.97, +4.00] | 201/142 | 0.0017 | +0.150 [+0.069, +0.230] |
+| BoolQ | +4.16 [+2.36, +5.99] | 531/395 | 8.8e-6 | +0.075 [+0.052, +0.098] |
+| HellaSwag | +1.38 [+0.80, +1.96] | 515/376 | 3.6e-6 | +0.575 [+0.484, +0.668] |
+| OpenBookQA | -0.40 [-3.20, +2.60] | 27/29 | 0.89 | +0.259 [+0.010, +0.518] |
+| PIQA | +1.14 [-0.33, +2.61] | 101/80 | 0.14 | +0.124 [-0.008, +0.257] |
+| WinoGrande | +0.24 [-3.08, +3.55] | 222/219 | 0.92 | +0.080 [+0.007, +0.154] |
+
+The score margins are directionally favorable to MTP on every task, and their
+intervals exclude zero on five of seven tasks. The accuracy advantage is most
+clearly driven by HellaSwag and BoolQ, with additional support from the two ARC
+tasks. MTP also exceeds random and span masking on the macro, driven especially
+by HellaSwag and BoolQ; task-specific exceptions and wide intervals remain.
+Raw margins are not aggregated across tasks because their scales differ;
+normalized margins and option-set probability, log-loss, and Brier comparisons
+are retained in `paired-core.json`.
+
+This is a concrete reduction in evaluation-example uncertainty, but not proof
+of a general training-objective effect. The analysis includes six model pairs
+and seven exploratory task comparisons, treats the benchmark suite as fixed,
+and conditions on one trained checkpoint per objective. It does not measure
+pretraining-seed variance, which remains the principal limitation on stronger
+scientific claims.
+
 ## Checkpoint trajectory
 
 | Iteration | NTP | MTP | Random masking | Span masking | Best core macro |

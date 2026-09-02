@@ -72,6 +72,47 @@ of the apparently largest differences occur on the smaller or less stable
 benchmarks. For example, random masking's macro lead is helped by BoolQ and
 OpenBookQA, but it does not lead HellaSwag, PIQA, WinoGrande, or ARC-Challenge.
 
+## Paired evaluation-example uncertainty
+
+The final-checkpoint evaluations were rerun with sample logging and matched by
+task name, document ID, document hash, task-configuration hash, and dataset
+fingerprint. All 20,465 examples match uniquely for every condition. The table
+uses the stated first-minus-second direction and 10,000 deterministic paired
+bootstrap resamples (seed 12345). Accuracy is the task's reportable metric:
+length-normalized accuracy where lm-eval defines it and raw accuracy otherwise.
+
+| Comparison | Core macro difference | Paired-bootstrap 95% CI |
+|---|---:|---:|
+| NTP − MTP | -0.08 points | [-0.88, +0.70] |
+| NTP − random masking | -0.41 points | [-1.21, +0.38] |
+| NTP − span masking | -0.02 points | [-0.82, +0.77] |
+| MTP − random masking | -0.33 points | [-1.13, +0.45] |
+| MTP − span masking | +0.06 points | [-0.74, +0.86] |
+| Random masking − span masking | +0.39 points | [-0.39, +1.16] |
+
+Thus none of the final macro differences is distinguishable from
+evaluation-example noise. The strongest task-local contrasts point in opposing
+directions:
+
+| Comparison | Task | Accuracy difference (95% CI) | Only first/second correct | Exact McNemar p | Raw log-likelihood-margin difference (95% CI) |
+|---|---|---:|---:|---:|---:|
+| NTP − random masking | HellaSwag | +1.43 [+0.87, +2.02] | 513/369 | 1.4e-6 | +0.864 [+0.769, +0.962] |
+| NTP − random masking | BoolQ | -2.84 [-4.65, -1.01] | 409/502 | 0.0023 | -0.043 [-0.069, -0.017] |
+| NTP − span masking | HellaSwag | +1.54 [+0.97, +2.14] | 527/372 | 2.6e-7 | +0.770 [+0.675, +0.868] |
+| MTP − span masking | HellaSwag | +1.63 [+1.06, +2.21] | 527/363 | 4.3e-8 | +0.825 [+0.726, +0.924] |
+| Random masking − span masking | BoolQ | +3.30 [+1.50, +5.14] | 501/393 | 0.00034 | +0.064 [+0.040, +0.089] |
+
+The margin results support these local contrasts, but they do not form a
+consistent cross-task objective effect. Raw margins are reported only within
+tasks because their scales differ substantially; normalized margins are also
+available in `paired-core.json`. These are exploratory comparisons across six
+model pairs and seven tasks, so isolated small p-values are not treated as
+confirmatory evidence.
+
+These intervals condition on the trained checkpoints and treat the seven
+benchmarks as a fixed suite. They measure evaluation-example uncertainty, not
+pretraining-seed variance; all objectives still have only one pretraining seed.
+
 ## Checkpoint trajectory
 
 | Iteration | NTP | MTP | Random masking | Span masking | Best core macro |
