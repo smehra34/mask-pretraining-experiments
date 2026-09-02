@@ -5,3 +5,4 @@ conditions:
   - ../studies/1b_objective_screen/mtp-2token.yaml
   - ../studies/1b_objective_screen/meap-random-015.yaml
   - ../studies/1b_objective_screen/meap-span-015-s5.yaml
+  - ../studies/1b_objective_screen/meap-variable-span-015-max5.yaml

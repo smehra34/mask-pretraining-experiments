@@ -8,7 +8,12 @@ from unittest.mock import patch
 
 import yaml
 
-from experiment_manager.config import ConfigError, load_collection, load_experiment
+from experiment_manager.config import (
+    ConfigError,
+    _validate_masking,
+    load_collection,
+    load_experiment,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -32,6 +37,36 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(experiment.main.environment["INPUT_MASK_SPAN_LENGTH"], "5")
         self.assertEqual(len(experiment.cooldowns), 1)
         self.assertEqual(experiment.resolved["derived"]["persistent_save_interval"], 9537)
+
+    def test_variable_span_condition_resolves_all_stages(self) -> None:
+        experiment = load_experiment(
+            ROOT / "studies/1b_objective_screen/meap-variable-span-015-max5.yaml"
+        )
+        self.assertEqual(
+            experiment.experiment_name,
+            "1b-objective-screen__meap-variable-span-015-max5",
+        )
+        self.assertEqual(experiment.main.environment["INPUT_MASK_RATIO"], "0.15")
+        self.assertEqual(
+            experiment.main.environment["INPUT_MASK_STRATEGY"], "variable_span"
+        )
+        self.assertEqual(experiment.main.environment["INPUT_MASK_SPAN_LENGTH"], "5")
+        self.assertEqual(len(experiment.cooldowns), 1)
+
+    def test_masking_strategy_validation(self) -> None:
+        _validate_masking(
+            {
+                "INPUT_MASK_RATIO": "0.15",
+                "INPUT_MASK_STRATEGY": "variable_span",
+                "INPUT_MASK_SPAN_LENGTH": "5",
+                "INPUT_MASK_TOKEN": "[control_768]",
+            }
+        )
+        with self.assertRaisesRegex(ConfigError, "INPUT_MASK_STRATEGY"):
+            _validate_masking({"INPUT_MASK_STRATEGY": "unknown"})
+        _validate_masking(
+            {"INPUT_MASK_STRATEGY": "variable_span", "INPUT_MASK_SPAN_LENGTH": "17"}
+        )
 
     def test_each_cooldown_branch_has_its_own_token_budget(self) -> None:
         recipe = yaml.safe_load((ROOT / "recipes/1b_llama.yaml").read_text())
@@ -60,8 +95,11 @@ class ConfigTests(unittest.TestCase):
                 ROOT / f"collections/{size}_objective_screen.yaml"
             )
             self.assertEqual(name, f"{size}-objective-screen")
-            self.assertEqual(len(experiments), 4)
-            self.assertEqual(len({item.experiment_name for item in experiments}), 4)
+            expected_count = 5 if size == "1b" else 4
+            self.assertEqual(len(experiments), expected_count)
+            self.assertEqual(
+                len({item.experiment_name for item in experiments}), expected_count
+            )
             objectives = {
                 (
                     item.main.environment["MTP_NUM_LAYERS"],
@@ -71,15 +109,15 @@ class ConfigTests(unittest.TestCase):
                 )
                 for item in experiments
             }
-            self.assertEqual(
-                objectives,
-                {
-                    ("0", "0.0", "random", "1"),
-                    ("1", "0.0", "random", "1"),
-                    ("0", "0.15", "random", "1"),
-                    ("0", "0.15", "span", "5"),
-                },
-            )
+            expected_objectives = {
+                ("0", "0.0", "random", "1"),
+                ("1", "0.0", "random", "1"),
+                ("0", "0.15", "random", "1"),
+                ("0", "0.15", "span", "5"),
+            }
+            if size == "1b":
+                expected_objectives.add(("0", "0.15", "variable_span", "5"))
+            self.assertEqual(objectives, expected_objectives)
 
     def test_model_family_sizes_and_budgets_are_frozen(self) -> None:
         small = load_experiment(ROOT / "studies/300m_objective_screen/ntp.yaml")

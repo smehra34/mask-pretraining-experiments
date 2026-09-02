@@ -123,8 +123,10 @@ def _validate_masking(env: dict[str, str]) -> None:
     if not 0.0 <= ratio <= 1.0:
         raise ConfigError(f"INPUT_MASK_RATIO must be in [0, 1], got {ratio}")
     strategy = env.get("INPUT_MASK_STRATEGY", "random")
-    if strategy not in {"random", "span"}:
-        raise ConfigError("INPUT_MASK_STRATEGY must be 'random' or 'span'")
+    if strategy not in {"random", "span", "variable_span"}:
+        raise ConfigError(
+            "INPUT_MASK_STRATEGY must be 'random', 'span', or 'variable_span'"
+        )
     span_length = int(env.get("INPUT_MASK_SPAN_LENGTH", "1"))
     if span_length <= 0:
         raise ConfigError("INPUT_MASK_SPAN_LENGTH must be positive")

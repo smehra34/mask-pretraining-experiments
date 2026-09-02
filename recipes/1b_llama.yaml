@@ -12,7 +12,7 @@ execution:
     # One allocation may not finish the 36B-token trunk; rolling checkpoints
     # make it safe to resume while staying within the site wall-time limit.
     - --time=12:00:00
-    - --nodes=2
+    - --nodes=4
     - --ntasks-per-node=1
     - --gpus-per-node=4
     - --cpus-per-task=72

@@ -174,8 +174,9 @@ should be interpreted as within-study diagnostics.
 
 ## Defining experiments
 
-The two objective screens each contain NTP, native Megatron two-token MTP
-(one sequential MTP layer), 15% random MEAP, and 15% span-5 MEAP:
+The two objective screens contain NTP, native Megatron two-token MTP
+(one sequential MTP layer), 15% random MEAP, and 15% span-5 MEAP. The 1B
+screen additionally contains variable-span MEAP with maximum length five:
 
 ```bash
 /usr/bin/python3.11 mask_exp.py plan-collection collections/300m_objective_screen.yaml
@@ -212,6 +213,20 @@ Only environment keys declared by the recipe may be overridden, so misspelled pa
 validation. `INPUT_MASK_RATIO: 0.0` is the vanilla NTP control. The recipe uses the reserved
 `[control_768]` token from the Mistral v0.3 tokenizer, and validation ensures mask ratios, strategies, span lengths, stage token
 counts, and cooldown checkpoint alignment are coherent.
+
+`INPUT_MASK_STRATEGY: variable_span` interprets `INPUT_MASK_SPAN_LENGTH` as the
+positive truncation maximum. It samples complete span lengths from a truncated
+geometric distribution with fixed p=0.5. For example, when the maximum is five,
+lengths 1–5 have normalized weights proportional to `[16, 8, 4, 2, 1]`. This
+standard memoryless distribution
+strongly favors easier short spans while retaining a diminishing tail of harder
+spans, without hand-designed irregular weights or a probability sweep. Lengths
+are renormalized over those that fit the remaining token budget and an eligible
+run; placement is uniform over feasible starts. Thus masking never crosses an
+ineligible/document boundary, terminates without rejection loops, and aims for
+`floor(eligible_tokens * ratio)` masked tokens. Adjacent independently sampled
+spans may merge in the final bitmap and therefore produce effective mask
+offsets longer than five.
 
 Each cooldown source has an independent token budget. For example:
 
