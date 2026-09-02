@@ -18,12 +18,14 @@ The scientifically defensible conclusions are:
   checkpoint.
 - MTP does not show a consistent downstream advantage at 300M. Its small final
   advantage over NTP is only 0.08 points and is not meaningful.
-- Masking is not detectably beneficial or harmful overall. Random masking has
-  the highest final macro-average, while span masking leads immediately before
-  cooldown, but neither result is stable across checkpoints.
-- Raw validation loss should not be used to rank masked against unmasked
-  objectives because masking deliberately makes the validation prediction
-  problem harder.
+- Masking is not detectably beneficial or harmful on the core downstream
+  macro-average. Random masking has the highest final macro-average, while span
+  masking leads immediately before cooldown, but neither result is stable
+  across checkpoints. On directly comparable clean-language-model metrics,
+  however, both masking methods regress at 300M, especially span masking.
+- Validation is evaluated on clean, uncorrupted inputs for every objective, so
+  validation loss is directly comparable. On this metric, random masking is
+  modestly worse than NTP and span masking is worse still at 300M.
 
 ## Experiment and metrics
 
@@ -164,16 +166,18 @@ inversely correlated with the core macro-average:
 
 This mostly measures training progress: later checkpoints have lower loss and
 higher downstream accuracy. It does not imply that validation loss reliably
-selects an objective. Within a fixed checkpoint the association changes over
-training, and at the main-final checkpoint it is reversed: the masking methods
-have higher loss but the two best downstream macro-averages.
+selects an objective for every downstream task. Within a fixed checkpoint the
+association changes over training, and at the main-final checkpoint it is
+reversed: the masking methods have higher clean-validation loss but the two
+best downstream macro-averages.
 
-NTP and MTP are directly comparable and have nearly identical final losses
-(2.577 and 2.574), matching their nearly identical downstream results. The
-masking objectives are not directly comparable to those losses because their
-validation inputs are deliberately corrupted. Span masking removes contiguous
-context and therefore creates the hardest token-prediction problem. Its higher
-loss does not indicate a proportionally worse downstream model.
+Validation examples are not corrupted: input masking is applied only to the
+training split. All four final losses are therefore directly comparable as
+measures of clean next-token prediction. NTP and MTP have nearly identical
+final losses (2.577 and 2.574). Random masking is modestly worse at 2.607, and
+span masking is worse at 2.617. This clean-loss regression can coexist with
+competitive multiple-choice scores, but it is evidence of a tradeoff rather
+than an artifact of evaluating a harder corrupted input.
 
 ## Scientific interpretation
 

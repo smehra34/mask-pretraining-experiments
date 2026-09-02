@@ -12,9 +12,10 @@ The most defensible conclusion is:
 
 - MTP shows a small positive aggregate signal and is the best single choice if
   one objective must be selected from this screen.
-- Span masking remains competitive despite substantially higher validation
-  loss, demonstrating that validation loss is not directly comparable across
-  these objectives and is not a reliable method-selection criterion here.
+- Span masking remains competitive on the downstream macro-average despite
+  substantially worse clean-validation loss. Because validation inputs are
+  uncorrupted for every objective, this indicates a real tradeoff between
+  clean next-token modeling and the measured downstream tasks.
 - Random masking is broadly neutral: it performs within the same downstream
   regime without a consistent advantage.
 - Additional seeds would be required to establish small differences between
@@ -145,14 +146,14 @@ Within an individual checkpoint, the relationship is unstable and even changes
 sign. Validation loss is therefore useful for tracking optimization within a
 run, but weak evidence for selecting between these objectives.
 
-The loss comparison also has an important structural caveat. NTP and MTP see
-the normal token context, whereas the masking objectives predict with part of
-their input context deliberately corrupted. Span masking removes contiguous
-context and is consequently an especially difficult token-prediction problem.
-Its systematically higher validation loss is therefore not an apples-to-apples
-measure of representation or downstream model quality. This explains why span
-masking can have the worst validation loss while matching or exceeding the
-other methods on downstream evaluations.
+Validation examples are not corrupted: input masking is applied only to the
+training split. The loss comparison is therefore apples-to-apples as a measure
+of clean next-token prediction. Span masking's systematically higher
+validation loss is evidence that this training objective produces a worse
+clean causal language model at the present scale and budget, even though it
+can match or exceed the other methods on some downstream evaluations. The two
+signals measure different capabilities and should both be reported rather
+than explaining away the clean-loss regression as evaluation corruption.
 
 MTP provides the cleanest alignment between the two signals at the final
 checkpoint: it has both the lowest validation loss and the highest core macro.
@@ -169,9 +170,11 @@ training is more important, NTP also remains defensible because the absolute
 differences are small.
 
 Span masking is the most interesting non-trivial result: its downstream
-performance is competitive despite its worse objective loss. Follow-up work
-on masking should evaluate additional seeds and should avoid using raw
-validation loss to compare masked and unmasked objectives directly.
+performance is competitive despite worse clean next-token loss. Follow-up work
+should evaluate additional seeds and explicitly test whether the harder masked
+objective's capabilities compensate for this clean-language-model tradeoff.
+Raw validation loss is directly comparable across objectives, but it should
+not be treated as the sole measure of masked prediction or downstream utility.
 
 ## Paloma evaluation
 
