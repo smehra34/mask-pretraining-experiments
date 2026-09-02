@@ -66,6 +66,9 @@ class EvaluationTests(unittest.TestCase):
             set(suites),
             {"smoke", "core", "math", "code", "paloma", "paloma_smoke"},
         )
+        for name in ("core", "math", "code"):
+            self.assertTrue(suites[name].log_samples)
+            self.assertFalse(suites[name].write_out)
         self.assertEqual(suites["smoke"].limit, 20)
         self.assertFalse(suites["math"].unsafe_code)
         self.assertTrue(suites["code"].unsafe_code)

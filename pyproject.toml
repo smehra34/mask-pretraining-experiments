@@ -3,13 +3,14 @@ name = "mask-experiment-manager"
 version = "0.1.0"
 description = "YAML-driven main/cooldown experiment manager for mask pretraining"
 requires-python = ">=3.10"
-dependencies = ["PyYAML>=6.0"]
+dependencies = ["numpy>=1.24", "PyYAML>=6.0"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0", "ruff>=0.9"]
 
 [project.scripts]
 mask-exp = "experiment_manager.cli:main"
+mask-eval-paired = "experiment_manager.paired_eval:main"
 
 [build-system]
 requires = ["setuptools>=75"]

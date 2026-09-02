@@ -160,6 +160,49 @@ evaluation root configured in `evaluations/suites.yaml`. Each training
 condition/stage/suite receives a separate evaluation run in the shared
 `mask_pretraining` W&B project, grouped by study and tagged with condition,
 stage, and suite. Checkpoint iteration is used as the W&B logging step.
+Reportable lm-eval suites save per-example samples but leave `write_out`
+disabled: sample files contain stable document/task identities, task-definition
+fingerprints, gold targets, choice scores, metrics, and filtered generations;
+`write_out` only prints example prompts. Request caches contain constructed
+requests, not model responses, and can therefore accelerate inference-only
+sample-logging reruns without mixing checkpoint outputs.
+
+After two or more matching evaluations have sample files, produce paired JSON
+and Markdown reports with a fixed A-minus-B direction:
+
+```bash
+/usr/bin/python3.11 -m experiment_manager.paired_eval \
+  --condition NTP=/path/to/ntp/core/step_38148 \
+  --condition MTP=/path/to/mtp/core/step_38148 \
+  --condition random_mask=/path/to/random/core/step_38148 \
+  --seed 12345 --resamples 10000 \
+  --json paired-core.json --markdown paired-core.md
+```
+
+The loader pairs by task, document ID, and document hash—not file order—and
+rejects task/configuration differences, partial samples, and duplicate IDs.
+Intervals quantify evaluation-example uncertainty for fixed checkpoints, not
+variation across pretraining seeds.
+
+The bootstrap uses bounded-memory NumPy batches when NumPy is installed and
+records the selected backend in the JSON. To keep the analysis off a login
+node, add `--submit-slurm`; this submits a CPU-only job that re-runs the same
+command without recursively submitting another job:
+
+```bash
+/usr/bin/python3.11 -m experiment_manager.paired_eval \
+  --condition NTP=/path/to/ntp/core/step_38148 \
+  --condition MTP=/path/to/mtp/core/step_38148 \
+  --seed 12345 --resamples 10000 \
+  --json paired-core.json --markdown paired-core.md \
+  --submit-slurm --slurm-account infra01 \
+  --slurm-time 00:30:00 --slurm-mem 4G
+```
+
+No GPU or `--gres` request is made. Optional `--slurm-partition`,
+`--slurm-cpus`, and `--slurm-log` flags override the small CPU-job defaults.
+The job uses the configured `test-env` Slurm container so NumPy is available;
+override it with `--slurm-environment` or pass an empty value to disable it.
 
 For the initial scaling screen, run `core` at intermediate persistent
 checkpoints and run the complete `math` and `code` suites only for the primary

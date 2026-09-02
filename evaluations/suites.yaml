@@ -8,7 +8,7 @@ backend:
   # The local source avoids requiring outbound GitHub access from compute nodes.
   lm_eval_source: /users/smehra/developer/lm-eval-v0.4.12
   lm_eval_commit: 6d642546f4688648fced259eb3302efd36ece5af
-  lm_eval_patch: megatron-inference-rank0-wandb-atomic-cache-20260825
+  lm_eval_patch: megatron-inference-rank0-wandb-atomic-cache-sample-identity-20260901
   output_root: /capstor/scratch/cscs/smehra/megatron-runs/evaluations
   request_cache: /iopsstor/scratch/cscs/smehra/lm-eval/request-cache-v0.4.12
   hf_home: /iopsstor/scratch/cscs/smehra/huggingface/lm-eval-v0.4.12
@@ -37,16 +37,22 @@ suites:
     description: Relatively cheap likelihood-based general and commonsense evaluation.
     tasks: [hellaswag, piqa, winogrande, arc_easy, arc_challenge, openbookqa, boolq]
     run_time: 00:30:00
+    log_samples: true
+    write_out: false
 
   math:
     description: Focused deterministic generative math evaluation for primary checkpoints.
     tasks: [gsm8k]
     run_time: 02:00:00
+    log_samples: true
+    write_out: false
 
   code:
     description: Execution-based pass@1 code evaluation; requires explicit unsafe-code opt-in.
     tasks: [mbpp, humaneval]
     run_time: 03:00:00
+    log_samples: true
+    write_out: false
     unsafe_code: true
 
   paloma:
