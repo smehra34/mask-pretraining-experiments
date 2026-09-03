@@ -119,6 +119,18 @@ class ConfigTests(unittest.TestCase):
                 expected_objectives.add(("0", "0.15", "variable_span", "5"))
             self.assertEqual(objectives, expected_objectives)
 
+    def test_training_launchers_enable_cumulative_flop_progress_logging(self) -> None:
+        launcher_paths = {
+            load_experiment(condition).submission_script
+            for condition in ROOT.glob("studies/*/*.yaml")
+        }
+        launcher_paths.add(ROOT / "submission/train_1b_llama_test.sh")
+
+        for launcher_path in launcher_paths:
+            launcher = launcher_path.read_text()
+            self.assertIn("--log-throughput", launcher, launcher_path)
+            self.assertIn("--log-progress", launcher, launcher_path)
+
     def test_model_family_sizes_and_budgets_are_frozen(self) -> None:
         small = load_experiment(ROOT / "studies/300m_objective_screen/ntp.yaml")
         large = load_experiment(ROOT / "studies/1b_objective_screen/ntp.yaml")

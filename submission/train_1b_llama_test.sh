@@ -238,6 +238,7 @@ NETWORK_SIZE_ARGS=(
 
 LOGGING_ARGS=(
   --log-throughput
+  --log-progress
   --tensorboard-dir "$TENSORBOARD_DIR"
   --log-timers-to-tensorboard
   --log-memory-to-tensorboard

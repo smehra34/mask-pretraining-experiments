@@ -306,6 +306,7 @@ NETWORK_SIZE_ARGS=(
 
 LOGGING_ARGS=(
   --log-throughput
+  --log-progress
   # Despite its legacy name, this also enables iteration timers and throughput
   # metrics in W&B when no TensorBoard writer is configured.
   --log-timers-to-tensorboard

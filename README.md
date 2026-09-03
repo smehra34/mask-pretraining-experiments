@@ -69,6 +69,12 @@ The underlying submission script detects its rolling checkpoint and resumes. The
 to start a new main run in an occupied checkpoint namespace and refuses to start a cooldown branch
 that already has a tracker; use `resume` for those cases.
 
+Future training runs log instantaneous throughput and total theoretical work to
+W&B. The cumulative counter is recorded as `train/cumulative_flops` at the
+normal metrics interval and survives resumptions through checkpoint state.
+Persistent checkpoint events also append cumulative FLOPs, tokens, and job and
+cumulative throughput to `progress.txt` in the checkpoint directory.
+
 ## Short Muon selection sweep
 
 Before running objective comparisons, validate and submit the unmasked Muon sweep:
