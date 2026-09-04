@@ -1203,6 +1203,406 @@
     {
       "bootstrap_backend": "numpy-vectorized",
       "bootstrap_resamples": 10000,
+      "condition_A": "NTP",
+      "condition_B": "variable_span",
+      "core_unweighted_macro_accuracy_difference": {
+        "bootstrap_se": 0.004164903734318389,
+        "ci95_high": 0.0018889193028850506,
+        "ci95_low": -0.014337620678843513,
+        "estimate": -0.006269320083232818
+      },
+      "schema_version": "paired-eval/v1",
+      "seed": 12345,
+      "subtraction": "A-minus-B",
+      "tasks": {
+        "arc_challenge": {
+          "accuracy_A": 0.3430034129692833,
+          "accuracy_B": 0.3515358361774744,
+          "accuracy_difference": {
+            "bootstrap_se": 0.010973072085670532,
+            "ci95_high": 0.012798634812286689,
+            "ci95_low": -0.029863481228668942,
+            "estimate": -0.008532423208191127
+          },
+          "discordance": {
+            "both_correct": 325,
+            "both_wrong": 683,
+            "mcnemar_exact_two_sided_p": 0.4823062881447227,
+            "only_A_correct": 77,
+            "only_B_correct": 87
+          },
+          "matching": {
+            "duplicates": 0,
+            "matched": 1172,
+            "unmatched_A": 0,
+            "unmatched_B": 0
+          },
+          "n": 1172,
+          "normalized_margin_difference": {
+            "bootstrap_se": 0.0036790434024940566,
+            "ci95_high": 0.004462499413804492,
+            "ci95_low": -0.00997129361633336,
+            "estimate": -0.0027766954722581215
+          },
+          "option_set_brier_difference": {
+            "bootstrap_se": 0.013128232729656995,
+            "ci95_high": 0.031821552153376814,
+            "ci95_low": -0.019060931650100473,
+            "estimate": 0.006480431959241838
+          },
+          "option_set_gold_probability_difference": {
+            "bootstrap_se": 0.006335945321820086,
+            "ci95_high": 0.013466832986918495,
+            "ci95_low": -0.01125780596768878,
+            "estimate": 0.0011978775097523761
+          },
+          "option_set_log_loss_difference": {
+            "bootstrap_se": 0.053539412626725645,
+            "ci95_high": 0.1480563295450228,
+            "ci95_low": -0.06312078853378855,
+            "estimate": 0.04317150894312537
+          },
+          "raw_margin_difference": {
+            "bootstrap_se": 0.06742653875586326,
+            "ci95_high": 0.0913080232252703,
+            "ci95_low": -0.17336857971123193,
+            "estimate": -0.04169372736462851
+          }
+        },
+        "arc_easy": {
+          "accuracy_A": 0.6233164983164983,
+          "accuracy_B": 0.6279461279461279,
+          "accuracy_difference": {
+            "bootstrap_se": 0.007756196425054682,
+            "ci95_high": 0.010521885521885523,
+            "ci95_low": -0.01978114478114478,
+            "estimate": -0.004629629629629629
+          },
+          "discordance": {
+            "both_correct": 1313,
+            "both_wrong": 716,
+            "mcnemar_exact_two_sided_p": 0.5914501124861733,
+            "only_A_correct": 168,
+            "only_B_correct": 179
+          },
+          "matching": {
+            "duplicates": 0,
+            "matched": 2376,
+            "unmatched_A": 0,
+            "unmatched_B": 0
+          },
+          "n": 2376,
+          "normalized_margin_difference": {
+            "bootstrap_se": 0.0027063670191210605,
+            "ci95_high": 0.003168163492335097,
+            "ci95_low": -0.007520518225593685,
+            "estimate": -0.002125993509121174
+          },
+          "option_set_brier_difference": {
+            "bootstrap_se": 0.008195880534141702,
+            "ci95_high": 0.016474516516855008,
+            "ci95_low": -0.015731731777477127,
+            "estimate": 9.858959304008221e-05
+          },
+          "option_set_gold_probability_difference": {
+            "bootstrap_se": 0.004361077023883405,
+            "ci95_high": 0.007835160793403587,
+            "ci95_low": -0.009198142307000338,
+            "estimate": -0.0006686875554082911
+          },
+          "option_set_log_loss_difference": {
+            "bootstrap_se": 0.02259664058494655,
+            "ci95_high": 0.07860121632587765,
+            "ci95_low": -0.009614941073700383,
+            "estimate": 0.03369634369823216
+          },
+          "raw_margin_difference": {
+            "bootstrap_se": 0.041081223993158694,
+            "ci95_high": 0.06831830368171522,
+            "ci95_low": -0.09212693192397542,
+            "estimate": -0.011853347416584266
+          }
+        },
+        "boolq": {
+          "accuracy_A": 0.5287461773700306,
+          "accuracy_B": 0.5611620795107034,
+          "accuracy_difference": {
+            "bootstrap_se": 0.010055562212384853,
+            "ci95_high": -0.012844036697247707,
+            "ci95_low": -0.052599388379204894,
+            "estimate": -0.03241590214067278
+          },
+          "discordance": {
+            "both_correct": 1236,
+            "both_wrong": 942,
+            "mcnemar_exact_two_sided_p": 0.0014744922761091089,
+            "only_A_correct": 493,
+            "only_B_correct": 599
+          },
+          "matching": {
+            "duplicates": 0,
+            "matched": 3270,
+            "unmatched_A": 0,
+            "unmatched_B": 0
+          },
+          "n": 3270,
+          "normalized_margin_difference": {
+            "bootstrap_se": 0.004318764799276252,
+            "ci95_high": -0.020168977504962566,
+            "ci95_low": -0.037082636207494045,
+            "estimate": -0.028615425337223707
+          },
+          "option_set_brier_difference": {
+            "bootstrap_se": 0.005921725498276279,
+            "ci95_high": 0.04215477611084745,
+            "ci95_low": 0.018697466812296833,
+            "estimate": 0.030311371760563047
+          },
+          "option_set_gold_probability_difference": {
+            "bootstrap_se": 0.0030448796659125867,
+            "ci95_high": -0.006838134196730371,
+            "ci95_low": -0.018755545632311514,
+            "estimate": -0.012813664715473011
+          },
+          "option_set_log_loss_difference": {
+            "bootstrap_se": 0.006541053806857757,
+            "ci95_high": 0.04651955140084907,
+            "ci95_low": 0.020920959712111865,
+            "estimate": 0.03345280513124946
+          },
+          "raw_margin_difference": {
+            "bootstrap_se": 0.013431520795862056,
+            "ci95_high": -0.02954034746969147,
+            "ci95_low": -0.081882257308435,
+            "estimate": -0.055674898114044004
+          }
+        },
+        "hellaswag": {
+          "accuracy_A": 0.5465046803425613,
+          "accuracy_B": 0.5449113722366062,
+          "accuracy_difference": {
+            "bootstrap_se": 0.003032567328162497,
+            "ci95_high": 0.007568213503286198,
+            "ci95_low": -0.00438159729137622,
+            "estimate": 0.001593308105954989
+          },
+          "discordance": {
+            "both_correct": 5016,
+            "both_wrong": 4098,
+            "mcnemar_exact_two_sided_p": 0.6224609431781722,
+            "only_A_correct": 472,
+            "only_B_correct": 456
+          },
+          "matching": {
+            "duplicates": 0,
+            "matched": 10042,
+            "unmatched_A": 0,
+            "unmatched_B": 0
+          },
+          "n": 10042,
+          "normalized_margin_difference": {
+            "bootstrap_se": 0.0004556711752746188,
+            "ci95_high": 0.0012394408322856515,
+            "ci95_low": -0.0005287662025249796,
+            "estimate": 0.00035444353088159164
+          },
+          "option_set_brier_difference": {
+            "bootstrap_se": 0.003837059055489414,
+            "ci95_high": 0.007664368822896277,
+            "ci95_low": -0.00752085168341628,
+            "estimate": 5.64601569504252e-05
+          },
+          "option_set_gold_probability_difference": {
+            "bootstrap_se": 0.0018165827031321542,
+            "ci95_high": 0.00356106764985459,
+            "ci95_low": -0.0035834033595355344,
+            "estimate": -0.00011616098159645489
+          },
+          "option_set_log_loss_difference": {
+            "bootstrap_se": 0.0368449862372282,
+            "ci95_high": -0.0498229009577336,
+            "ci95_low": -0.19469169685429913,
+            "estimate": -0.12193422403380566
+          },
+          "raw_margin_difference": {
+            "bootstrap_se": 0.04826616354741698,
+            "ci95_high": 0.3374968751586553,
+            "ci95_low": 0.1477750575129444,
+            "estimate": 0.24247869079801676
+          }
+        },
+        "openbookqa": {
+          "accuracy_A": 0.36,
+          "accuracy_B": 0.358,
+          "accuracy_difference": {
+            "bootstrap_se": 0.016746178650962167,
+            "ci95_high": 0.034,
+            "ci95_low": -0.03,
+            "estimate": 0.002
+          },
+          "discordance": {
+            "both_correct": 144,
+            "both_wrong": 285,
+            "mcnemar_exact_two_sided_p": 1.0,
+            "only_A_correct": 36,
+            "only_B_correct": 35
+          },
+          "matching": {
+            "duplicates": 0,
+            "matched": 500,
+            "unmatched_A": 0,
+            "unmatched_B": 0
+          },
+          "n": 500,
+          "normalized_margin_difference": {
+            "bootstrap_se": 0.009405962128863295,
+            "ci95_high": -0.005342270130379619,
+            "ci95_low": -0.042310635846967176,
+            "estimate": -0.023631287494353014
+          },
+          "option_set_brier_difference": {
+            "bootstrap_se": 0.020143612203128027,
+            "ci95_high": 0.05925006565554483,
+            "ci95_low": -0.01981557983258059,
+            "estimate": 0.01965048977564055
+          },
+          "option_set_gold_probability_difference": {
+            "bootstrap_se": 0.008873883502239152,
+            "ci95_high": 0.009445679451385473,
+            "ci95_low": -0.024992156153480053,
+            "estimate": -0.00813789398133469
+          },
+          "option_set_log_loss_difference": {
+            "bootstrap_se": 0.11223281848543311,
+            "ci95_high": 0.76339066782092,
+            "ci95_low": 0.3234708074193542,
+            "estimate": 0.5398375106735455
+          },
+          "raw_margin_difference": {
+            "bootstrap_se": 0.12517773373695823,
+            "ci95_high": -0.32905003886310896,
+            "ci95_low": -0.8192107160992355,
+            "estimate": -0.5709778386726002
+          }
+        },
+        "piqa": {
+          "accuracy_A": 0.7072905331882481,
+          "accuracy_B": 0.7170837867247007,
+          "accuracy_difference": {
+            "bootstrap_se": 0.007152888405680112,
+            "ci95_high": 0.004352557127312296,
+            "ci95_low": -0.024483133841131665,
+            "estimate": -0.009793253536452665
+          },
+          "discordance": {
+            "both_correct": 1222,
+            "both_wrong": 442,
+            "mcnemar_exact_two_sided_p": 0.19733841594358562,
+            "only_A_correct": 78,
+            "only_B_correct": 96
+          },
+          "matching": {
+            "duplicates": 0,
+            "matched": 1838,
+            "unmatched_A": 0,
+            "unmatched_B": 0
+          },
+          "n": 1838,
+          "normalized_margin_difference": {
+            "bootstrap_se": 0.0014433959127144803,
+            "ci95_high": 0.0013371791321095026,
+            "ci95_low": -0.004255697169647058,
+            "estimate": -0.0014625258277505579
+          },
+          "option_set_brier_difference": {
+            "bootstrap_se": 0.009188735606314113,
+            "ci95_high": 0.03190882718056735,
+            "ci95_low": -0.004111732140256111,
+            "estimate": 0.013869255288222174
+          },
+          "option_set_gold_probability_difference": {
+            "bootstrap_se": 0.004688897831782476,
+            "ci95_high": 0.0033167751376162583,
+            "ci95_low": -0.014975694069202702,
+            "estimate": -0.005832217649993063
+          },
+          "option_set_log_loss_difference": {
+            "bootstrap_se": 0.036234563705829066,
+            "ci95_high": 0.21462004154900435,
+            "ci95_low": 0.07308523550222225,
+            "estimate": 0.14362473805704945
+          },
+          "raw_margin_difference": {
+            "bootstrap_se": 0.06831656135994707,
+            "ci95_high": 0.03685198199798217,
+            "ci95_low": -0.2302830235836561,
+            "estimate": -0.09663361181131587
+          }
+        },
+        "winogrande": {
+          "accuracy_A": 0.5682715074980268,
+          "accuracy_B": 0.5603788476716653,
+          "accuracy_difference": {
+            "bootstrap_se": 0.015512722657886693,
+            "ci95_high": 0.037884767166535126,
+            "ci95_low": -0.022888713496448304,
+            "estimate": 0.007892659826361484
+          },
+          "discordance": {
+            "both_correct": 519,
+            "both_wrong": 356,
+            "mcnemar_exact_two_sided_p": 0.6494750226505255,
+            "only_A_correct": 201,
+            "only_B_correct": 191
+          },
+          "matching": {
+            "duplicates": 0,
+            "matched": 1267,
+            "unmatched_A": 0,
+            "unmatched_B": 0
+          },
+          "n": 1267,
+          "normalized_margin_difference": {
+            "bootstrap_se": 0.0020298482854235887,
+            "ci95_high": 0.00013173904913640837,
+            "ci95_low": -0.007746234123241543,
+            "estimate": -0.0037700371762438485
+          },
+          "option_set_brier_difference": {
+            "bootstrap_se": 0.012905773581038634,
+            "ci95_high": 0.04585577516881761,
+            "ci95_low": -0.004797816663277747,
+            "estimate": 0.020389578632583425
+          },
+          "option_set_gold_probability_difference": {
+            "bootstrap_se": 0.005942465857744203,
+            "ci95_high": 0.006596062427773064,
+            "ci95_low": -0.016829860873083205,
+            "estimate": -0.005321313452856339
+          },
+          "option_set_log_loss_difference": {
+            "bootstrap_se": 0.019404131180202885,
+            "ci95_high": 0.07162068467279399,
+            "ci95_low": -0.003988998224135691,
+            "estimate": 0.03323742106604657
+          },
+          "raw_margin_difference": {
+            "bootstrap_se": 0.03436942172254015,
+            "ci95_high": 0.046033516603746064,
+            "ci95_low": -0.08865899520986559,
+            "estimate": -0.02078774649471856
+          }
+        }
+      },
+      "warnings": [
+        "Intervals quantify evaluation-example uncertainty conditional on these checkpoints; they do not quantify pretraining-seed variance.",
+        "Task and pairwise results are exploratory multiple comparisons; emphasize effect sizes and intervals.",
+        "Margin aggregation is omitted because core tasks do not all use the same official raw-versus-length-normalized accuracy rule."
+      ]
+    },
+    {
+      "bootstrap_backend": "numpy-vectorized",
+      "bootstrap_resamples": 10000,
       "condition_A": "MTP",
       "condition_B": "random_mask",
       "core_unweighted_macro_accuracy_difference": {
@@ -2003,6 +2403,406 @@
     {
       "bootstrap_backend": "numpy-vectorized",
       "bootstrap_resamples": 10000,
+      "condition_A": "MTP",
+      "condition_B": "variable_span",
+      "core_unweighted_macro_accuracy_difference": {
+        "bootstrap_se": 0.004082646585001795,
+        "ci95_high": 0.01805261498519764,
+        "ci95_low": 0.002083787862413769,
+        "estimate": 0.010130825028234262
+      },
+      "schema_version": "paired-eval/v1",
+      "seed": 12345,
+      "subtraction": "A-minus-B",
+      "tasks": {
+        "arc_challenge": {
+          "accuracy_A": 0.3677474402730375,
+          "accuracy_B": 0.3515358361774744,
+          "accuracy_difference": {
+            "bootstrap_se": 0.010868001571666114,
+            "ci95_high": 0.03754266211604096,
+            "ci95_low": -0.005119453924914676,
+            "estimate": 0.016211604095563138
+          },
+          "discordance": {
+            "both_correct": 340,
+            "both_wrong": 669,
+            "mcnemar_exact_two_sided_p": 0.15836889793139405,
+            "only_A_correct": 91,
+            "only_B_correct": 72
+          },
+          "matching": {
+            "duplicates": 0,
+            "matched": 1172,
+            "unmatched_A": 0,
+            "unmatched_B": 0
+          },
+          "n": 1172,
+          "normalized_margin_difference": {
+            "bootstrap_se": 0.0034060570250092357,
+            "ci95_high": 0.017065192640781643,
+            "ci95_low": 0.0038607395280635774,
+            "estimate": 0.010554381985223365
+          },
+          "option_set_brier_difference": {
+            "bootstrap_se": 0.012584186907075941,
+            "ci95_high": -0.01224522766710377,
+            "ci95_low": -0.06134045205808545,
+            "estimate": -0.03686423402213238
+          },
+          "option_set_gold_probability_difference": {
+            "bootstrap_se": 0.006119371233623359,
+            "ci95_high": 0.030840486358676297,
+            "ci95_low": 0.007181287894310461,
+            "estimate": 0.01916528531226241
+          },
+          "option_set_log_loss_difference": {
+            "bootstrap_se": 0.05182726126622124,
+            "ci95_high": -0.06166507331499944,
+            "ci95_low": -0.2631126743569037,
+            "estimate": -0.16159429031200773
+          },
+          "raw_margin_difference": {
+            "bootstrap_se": 0.06469940789389363,
+            "ci95_high": 0.3295332075738896,
+            "ci95_low": 0.0754804824671686,
+            "estimate": 0.20135132302063918
+          }
+        },
+        "arc_easy": {
+          "accuracy_A": 0.6481481481481481,
+          "accuracy_B": 0.6279461279461279,
+          "accuracy_difference": {
+            "bootstrap_se": 0.007780538131013188,
+            "ci95_high": 0.03535353535353535,
+            "ci95_low": 0.005471380471380472,
+            "estimate": 0.020202020202020204
+          },
+          "discordance": {
+            "both_correct": 1344,
+            "both_wrong": 688,
+            "mcnemar_exact_two_sided_p": 0.011167300748939084,
+            "only_A_correct": 196,
+            "only_B_correct": 148
+          },
+          "matching": {
+            "duplicates": 0,
+            "matched": 2376,
+            "unmatched_A": 0,
+            "unmatched_B": 0
+          },
+          "n": 2376,
+          "normalized_margin_difference": {
+            "bootstrap_se": 0.00262919795171515,
+            "ci95_high": 0.01164562733692668,
+            "ci95_low": 0.0012986709215972688,
+            "estimate": 0.0063846954332198004
+          },
+          "option_set_brier_difference": {
+            "bootstrap_se": 0.007944366236485393,
+            "ci95_high": -0.001485064511556879,
+            "ci95_low": -0.03238765588081793,
+            "estimate": -0.017232432601839365
+          },
+          "option_set_gold_probability_difference": {
+            "bootstrap_se": 0.004238943595461853,
+            "ci95_high": 0.01942674490673,
+            "ci95_low": 0.002604357819490443,
+            "estimate": 0.010918180382489926
+          },
+          "option_set_log_loss_difference": {
+            "bootstrap_se": 0.022177365049083207,
+            "ci95_high": 0.006420154993903312,
+            "ci95_low": -0.08088607307945422,
+            "estimate": -0.037224835806313104
+          },
+          "raw_margin_difference": {
+            "bootstrap_se": 0.038860734506671143,
+            "ci95_high": 0.21352010212720826,
+            "ci95_low": 0.06060759589922342,
+            "estimate": 0.13830616951216804
+          }
+        },
+        "boolq": {
+          "accuracy_A": 0.5703363914373089,
+          "accuracy_B": 0.5611620795107034,
+          "accuracy_difference": {
+            "bootstrap_se": 0.009767418897135914,
+            "ci95_high": 0.028440366972477066,
+            "ci95_low": -0.010091743119266056,
+            "estimate": 0.009174311926605505
+          },
+          "discordance": {
+            "both_correct": 1342,
+            "both_wrong": 912,
+            "mcnemar_exact_two_sided_p": 0.3629290689995886,
+            "only_A_correct": 523,
+            "only_B_correct": 493
+          },
+          "matching": {
+            "duplicates": 0,
+            "matched": 3270,
+            "unmatched_A": 0,
+            "unmatched_B": 0
+          },
+          "n": 3270,
+          "normalized_margin_difference": {
+            "bootstrap_se": 0.003834719819986765,
+            "ci95_high": 0.009404166077741178,
+            "ci95_low": -0.005520221952512238,
+            "estimate": 0.001978232551301534
+          },
+          "option_set_brier_difference": {
+            "bootstrap_se": 0.005764820236067592,
+            "ci95_high": 0.011408862770245493,
+            "ci95_low": -0.01135936049112184,
+            "estimate": -3.59331633746187e-06
+          },
+          "option_set_gold_probability_difference": {
+            "bootstrap_se": 0.00287760300193295,
+            "ci95_high": 0.009835711879819941,
+            "ci95_low": -0.001424920904887241,
+            "estimate": 0.004214886485431561
+          },
+          "option_set_log_loss_difference": {
+            "bootstrap_se": 0.006305227266879465,
+            "ci95_high": 0.013574800542612522,
+            "ci95_low": -0.01121341642989255,
+            "estimate": 0.0011396836385002334
+          },
+          "raw_margin_difference": {
+            "bootstrap_se": 0.012907156231199425,
+            "ci95_high": 0.04419395493440307,
+            "ci95_low": -0.006339260890214086,
+            "estimate": 0.019093662154054787
+          }
+        },
+        "hellaswag": {
+          "accuracy_A": 0.5603465445130452,
+          "accuracy_B": 0.5449113722366062,
+          "accuracy_difference": {
+            "bootstrap_se": 0.0029692871207110273,
+            "ci95_high": 0.02121091416052579,
+            "ci95_low": 0.009559848635729935,
+            "estimate": 0.015435172276438956
+          },
+          "discordance": {
+            "both_correct": 5111,
+            "both_wrong": 4054,
+            "mcnemar_exact_two_sided_p": 1.855862814692784e-07,
+            "only_A_correct": 516,
+            "only_B_correct": 361
+          },
+          "matching": {
+            "duplicates": 0,
+            "matched": 10042,
+            "unmatched_A": 0,
+            "unmatched_B": 0
+          },
+          "n": 10042,
+          "normalized_margin_difference": {
+            "bootstrap_se": 0.00042911623175884573,
+            "ci95_high": 0.006237693178874744,
+            "ci95_low": 0.004553923038249256,
+            "estimate": 0.005389477654411565
+          },
+          "option_set_brier_difference": {
+            "bootstrap_se": 0.00371961403473494,
+            "ci95_high": -0.015117807335326963,
+            "ci95_low": -0.029627200201870377,
+            "estimate": -0.022458438942478568
+          },
+          "option_set_gold_probability_difference": {
+            "bootstrap_se": 0.001791017093911581,
+            "ci95_high": 0.01460710799694673,
+            "ci95_low": 0.007554941822012816,
+            "estimate": 0.011080712458695756
+          },
+          "option_set_log_loss_difference": {
+            "bootstrap_se": 0.03553733815076941,
+            "ci95_high": -0.4065644254942257,
+            "ci95_low": -0.5449256551612529,
+            "estimate": -0.47531145899274874
+          },
+          "raw_margin_difference": {
+            "bootstrap_se": 0.04608768878318512,
+            "ci95_high": 0.9090713102788855,
+            "ci95_low": 0.7294609275654556,
+            "estimate": 0.8176891131292944
+          }
+        },
+        "openbookqa": {
+          "accuracy_A": 0.356,
+          "accuracy_B": 0.358,
+          "accuracy_difference": {
+            "bootstrap_se": 0.01549630706178912,
+            "ci95_high": 0.028,
+            "ci95_low": -0.032,
+            "estimate": -0.002
+          },
+          "discordance": {
+            "both_correct": 148,
+            "both_wrong": 291,
+            "mcnemar_exact_two_sided_p": 1.0,
+            "only_A_correct": 30,
+            "only_B_correct": 31
+          },
+          "matching": {
+            "duplicates": 0,
+            "matched": 500,
+            "unmatched_A": 0,
+            "unmatched_B": 0
+          },
+          "n": 500,
+          "normalized_margin_difference": {
+            "bootstrap_se": 0.007648839649048602,
+            "ci95_high": 0.0005118914771570515,
+            "ci95_low": -0.029213239598160235,
+            "estimate": -0.014402500852119596
+          },
+          "option_set_brier_difference": {
+            "bootstrap_se": 0.016593096337518203,
+            "ci95_high": 0.05832143325648201,
+            "ci95_low": -0.0063175023878937215,
+            "estimate": 0.02560235181088133
+          },
+          "option_set_gold_probability_difference": {
+            "bootstrap_se": 0.007273567916085615,
+            "ci95_high": 0.003883856941686084,
+            "ci95_low": -0.02476764582428141,
+            "estimate": -0.01065557099494782
+          },
+          "option_set_log_loss_difference": {
+            "bootstrap_se": 0.09741385667065768,
+            "ci95_high": 0.4899363916232315,
+            "ci95_low": 0.11032762714268643,
+            "estimate": 0.29742548805226277
+          },
+          "raw_margin_difference": {
+            "bootstrap_se": 0.10745632598191587,
+            "ci95_high": -0.10078260711118855,
+            "ci95_low": -0.5210910540836776,
+            "estimate": -0.3120548088425239
+          }
+        },
+        "piqa": {
+          "accuracy_A": 0.7187159956474428,
+          "accuracy_B": 0.7170837867247007,
+          "accuracy_difference": {
+            "bootstrap_se": 0.007093142573281393,
+            "ci95_high": 0.015233949945593036,
+            "ci95_low": -0.012513601741022852,
+            "estimate": 0.001632208922742111
+          },
+          "discordance": {
+            "both_correct": 1233,
+            "both_wrong": 432,
+            "mcnemar_exact_two_sided_p": 0.8791987439042916,
+            "only_A_correct": 88,
+            "only_B_correct": 85
+          },
+          "matching": {
+            "duplicates": 0,
+            "matched": 1838,
+            "unmatched_A": 0,
+            "unmatched_B": 0
+          },
+          "n": 1838,
+          "normalized_margin_difference": {
+            "bootstrap_se": 0.0014235245671138973,
+            "ci95_high": 0.004468133029104071,
+            "ci95_low": -0.0010650214865726114,
+            "estimate": 0.0017215642995649341
+          },
+          "option_set_brier_difference": {
+            "bootstrap_se": 0.008811431112327505,
+            "ci95_high": 0.02355923022458663,
+            "ci95_low": -0.01095294276987511,
+            "estimate": 0.006154979187695163
+          },
+          "option_set_gold_probability_difference": {
+            "bootstrap_se": 0.004491108227171351,
+            "ci95_high": 0.0078606034710521,
+            "ci95_low": -0.009751552271212306,
+            "estimate": -0.0010708022066791597
+          },
+          "option_set_log_loss_difference": {
+            "bootstrap_se": 0.0348653411160076,
+            "ci95_high": 0.10564584475703798,
+            "ci95_low": -0.03106021354142735,
+            "estimate": 0.03793690240425497
+          },
+          "raw_margin_difference": {
+            "bootstrap_se": 0.06405790785835988,
+            "ci95_high": 0.15179180454031277,
+            "ci95_low": -0.09918982207549659,
+            "estimate": 0.02715814389604818
+          }
+        },
+        "winogrande": {
+          "accuracy_A": 0.5706393054459353,
+          "accuracy_B": 0.5603788476716653,
+          "accuracy_difference": {
+            "bootstrap_se": 0.015652290469992686,
+            "ci95_high": 0.04104183109707971,
+            "ci95_low": -0.021310181531176007,
+            "estimate": 0.010260457774269928
+          },
+          "discordance": {
+            "both_correct": 519,
+            "both_wrong": 353,
+            "mcnemar_exact_two_sided_p": 0.5460403800194473,
+            "only_A_correct": 204,
+            "only_B_correct": 191
+          },
+          "matching": {
+            "duplicates": 0,
+            "matched": 1267,
+            "unmatched_A": 0,
+            "unmatched_B": 0
+          },
+          "n": 1267,
+          "normalized_margin_difference": {
+            "bootstrap_se": 0.0022253200912824953,
+            "ci95_high": 0.008030040590643361,
+            "ci95_low": -0.0007247874527050589,
+            "estimate": 0.0036325114493857657
+          },
+          "option_set_brier_difference": {
+            "bootstrap_se": 0.012713082908648551,
+            "ci95_high": 0.01451482687943287,
+            "ci95_low": -0.03506824309685635,
+            "estimate": -0.010095096991983061
+          },
+          "option_set_gold_probability_difference": {
+            "bootstrap_se": 0.005930668508780797,
+            "ci95_high": 0.02299556731868861,
+            "ci95_low": -0.0002603862589584364,
+            "estimate": 0.011398014719091687
+          },
+          "option_set_log_loss_difference": {
+            "bootstrap_se": 0.018397327274243595,
+            "ci95_high": 0.0350763697862597,
+            "ci95_low": -0.037623427804922026,
+            "estimate": -0.0009428997047139923
+          },
+          "raw_margin_difference": {
+            "bootstrap_se": 0.03339301704296738,
+            "ci95_high": 0.12427735958155053,
+            "ci95_low": -0.0074981920743924495,
+            "estimate": 0.059144282724798124
+          }
+        }
+      },
+      "warnings": [
+        "Intervals quantify evaluation-example uncertainty conditional on these checkpoints; they do not quantify pretraining-seed variance.",
+        "Task and pairwise results are exploratory multiple comparisons; emphasize effect sizes and intervals.",
+        "Margin aggregation is omitted because core tasks do not all use the same official raw-versus-length-normalized accuracy rule."
+      ]
+    },
+    {
+      "bootstrap_backend": "numpy-vectorized",
+      "bootstrap_resamples": 10000,
       "condition_A": "random_mask",
       "condition_B": "span_mask",
       "core_unweighted_macro_accuracy_difference": {
@@ -2391,6 +3191,806 @@
             "ci95_high": 0.0042090648839472975,
             "ci95_low": -0.10575348431160282,
             "estimate": -0.05082565988302295
+          }
+        }
+      },
+      "warnings": [
+        "Intervals quantify evaluation-example uncertainty conditional on these checkpoints; they do not quantify pretraining-seed variance.",
+        "Task and pairwise results are exploratory multiple comparisons; emphasize effect sizes and intervals.",
+        "Margin aggregation is omitted because core tasks do not all use the same official raw-versus-length-normalized accuracy rule."
+      ]
+    },
+    {
+      "bootstrap_backend": "numpy-vectorized",
+      "bootstrap_resamples": 10000,
+      "condition_A": "random_mask",
+      "condition_B": "variable_span",
+      "core_unweighted_macro_accuracy_difference": {
+        "bootstrap_se": 0.003785733888030147,
+        "ci95_high": 0.007473116823493522,
+        "ci95_low": -0.007416321638741773,
+        "estimate": -2.8771241841598982e-05
+      },
+      "schema_version": "paired-eval/v1",
+      "seed": 12345,
+      "subtraction": "A-minus-B",
+      "tasks": {
+        "arc_challenge": {
+          "accuracy_A": 0.3506825938566553,
+          "accuracy_B": 0.3515358361774744,
+          "accuracy_difference": {
+            "bootstrap_se": 0.010391873439257756,
+            "ci95_high": 0.01962457337883959,
+            "ci95_low": -0.021331058020477817,
+            "estimate": -0.0008532423208191126
+          },
+          "discordance": {
+            "both_correct": 338,
+            "both_wrong": 687,
+            "mcnemar_exact_two_sided_p": 1.0,
+            "only_A_correct": 73,
+            "only_B_correct": 74
+          },
+          "matching": {
+            "duplicates": 0,
+            "matched": 1172,
+            "unmatched_A": 0,
+            "unmatched_B": 0
+          },
+          "n": 1172,
+          "normalized_margin_difference": {
+            "bootstrap_se": 0.0032984127089418737,
+            "ci95_high": 0.013721186564724522,
+            "ci95_low": 0.0007905043773540644,
+            "estimate": 0.007273715538417236
+          },
+          "option_set_brier_difference": {
+            "bootstrap_se": 0.011083644897058702,
+            "ci95_high": 0.004520570837970137,
+            "ci95_low": -0.03939398514879123,
+            "estimate": -0.017185176769762868
+          },
+          "option_set_gold_probability_difference": {
+            "bootstrap_se": 0.005295274410207945,
+            "ci95_high": 0.021838736089298656,
+            "ci95_low": 0.0009870881885479861,
+            "estimate": 0.011164665016083753
+          },
+          "option_set_log_loss_difference": {
+            "bootstrap_se": 0.04971927631943111,
+            "ci95_high": 0.00552293994083295,
+            "ci95_low": -0.18867384067199697,
+            "estimate": -0.09078504089571653
+          },
+          "raw_margin_difference": {
+            "bootstrap_se": 0.06133753427045319,
+            "ci95_high": 0.26560379897630815,
+            "ci95_low": 0.027112498180152312,
+            "estimate": 0.14615590871399411
+          }
+        },
+        "arc_easy": {
+          "accuracy_A": 0.6519360269360269,
+          "accuracy_B": 0.6279461279461279,
+          "accuracy_difference": {
+            "bootstrap_se": 0.007376990490739011,
+            "ci95_high": 0.03872053872053872,
+            "ci95_low": 0.00968013468013468,
+            "estimate": 0.023989898989898988
+          },
+          "discordance": {
+            "both_correct": 1365,
+            "both_wrong": 700,
+            "mcnemar_exact_two_sided_p": 0.0014561245258225526,
+            "only_A_correct": 184,
+            "only_B_correct": 127
+          },
+          "matching": {
+            "duplicates": 0,
+            "matched": 2376,
+            "unmatched_A": 0,
+            "unmatched_B": 0
+          },
+          "n": 2376,
+          "normalized_margin_difference": {
+            "bootstrap_se": 0.002448637233636276,
+            "ci95_high": 0.011737276404154411,
+            "ci95_low": 0.002222849953618331,
+            "estimate": 0.006915916198842585
+          },
+          "option_set_brier_difference": {
+            "bootstrap_se": 0.007253073141305303,
+            "ci95_high": 0.00734643337808004,
+            "ci95_low": -0.02118385970600436,
+            "estimate": -0.006931404839436495
+          },
+          "option_set_gold_probability_difference": {
+            "bootstrap_se": 0.0038674138538647884,
+            "ci95_high": 0.013932767221336885,
+            "ci95_low": -0.001293260798827632,
+            "estimate": 0.006347923069706247
+          },
+          "option_set_log_loss_difference": {
+            "bootstrap_se": 0.021129867474107587,
+            "ci95_high": 0.03780256518084827,
+            "ci95_low": -0.045342230807926945,
+            "estimate": -0.0038866855280559756
+          },
+          "raw_margin_difference": {
+            "bootstrap_se": 0.037733576722015175,
+            "ci95_high": 0.15297248620931161,
+            "ci95_low": 0.004380654935441159,
+            "estimate": 0.0792944987181875
+          }
+        },
+        "boolq": {
+          "accuracy_A": 0.5458715596330275,
+          "accuracy_B": 0.5611620795107034,
+          "accuracy_difference": {
+            "bootstrap_se": 0.009591419451272435,
+            "ci95_high": 0.003669724770642202,
+            "ci95_low": -0.03363914373088685,
+            "estimate": -0.01529051987767584
+          },
+          "discordance": {
+            "both_correct": 1312,
+            "both_wrong": 962,
+            "mcnemar_exact_two_sided_p": 0.12046908845562257,
+            "only_A_correct": 473,
+            "only_B_correct": 523
+          },
+          "matching": {
+            "duplicates": 0,
+            "matched": 3270,
+            "unmatched_A": 0,
+            "unmatched_B": 0
+          },
+          "n": 3270,
+          "normalized_margin_difference": {
+            "bootstrap_se": 0.0035718921588410524,
+            "ci95_high": -0.01433595478777735,
+            "ci95_low": -0.02829137967631722,
+            "estimate": -0.02128782988384472
+          },
+          "option_set_brier_difference": {
+            "bootstrap_se": 0.0051423168732138026,
+            "ci95_high": 0.030395230829509283,
+            "ci95_low": 0.01029542452514393,
+            "estimate": 0.020323026165393242
+          },
+          "option_set_gold_probability_difference": {
+            "bootstrap_se": 0.0026393095942862997,
+            "ci95_high": -0.009353873187034971,
+            "ci95_low": -0.019748997027038927,
+            "estimate": -0.014630003495424563
+          },
+          "option_set_log_loss_difference": {
+            "bootstrap_se": 0.005602565623927001,
+            "ci95_high": 0.0342515163231851,
+            "ci95_low": 0.012099103037223098,
+            "estimate": 0.023155897777988575
+          },
+          "raw_margin_difference": {
+            "bootstrap_se": 0.011818724754802012,
+            "ci95_high": -0.045770727166342076,
+            "ci95_low": -0.09213631408294772,
+            "estimate": -0.0690966743212592
+          }
+        },
+        "hellaswag": {
+          "accuracy_A": 0.5490938060147381,
+          "accuracy_B": 0.5449113722366062,
+          "accuracy_difference": {
+            "bootstrap_se": 0.002980306695516975,
+            "ci95_high": 0.010057757418840869,
+            "ci95_low": -0.0016928898625771759,
+            "estimate": 0.0041824337781318464
+          },
+          "discordance": {
+            "both_correct": 5057,
+            "both_wrong": 4113,
+            "mcnemar_exact_two_sided_p": 0.16496713135739854,
+            "only_A_correct": 457,
+            "only_B_correct": 415
+          },
+          "matching": {
+            "duplicates": 0,
+            "matched": 10042,
+            "unmatched_A": 0,
+            "unmatched_B": 0
+          },
+          "n": 10042,
+          "normalized_margin_difference": {
+            "bootstrap_se": 0.0004067557188068965,
+            "ci95_high": 0.0020121670071636152,
+            "ci95_low": 0.0004199277416642253,
+            "estimate": 0.001199843770878365
+          },
+          "option_set_brier_difference": {
+            "bootstrap_se": 0.003655500085161102,
+            "ci95_high": 0.009513900509630377,
+            "ci95_low": -0.00465364481785708,
+            "estimate": 0.0025421943837613398
+          },
+          "option_set_gold_probability_difference": {
+            "bootstrap_se": 0.001761125175918045,
+            "ci95_high": 0.0017586232910460616,
+            "ci95_low": -0.005111984426113189,
+            "estimate": -0.0017008698216084263
+          },
+          "option_set_log_loss_difference": {
+            "bootstrap_se": 0.034300837943322025,
+            "ci95_high": -0.02158696934082529,
+            "ci95_low": -0.1566323627563531,
+            "estimate": -0.08862261349855882
+          },
+          "raw_margin_difference": {
+            "bootstrap_se": 0.044813760192050085,
+            "ci95_high": 0.1398615036030108,
+            "ci95_low": -0.03545257397435702,
+            "estimate": 0.05246678265532755
+          }
+        },
+        "openbookqa": {
+          "accuracy_A": 0.356,
+          "accuracy_B": 0.358,
+          "accuracy_difference": {
+            "bootstrap_se": 0.013505799667641536,
+            "ci95_high": 0.024,
+            "ci95_low": -0.028,
+            "estimate": -0.002
+          },
+          "discordance": {
+            "both_correct": 156,
+            "both_wrong": 299,
+            "mcnemar_exact_two_sided_p": 1.0,
+            "only_A_correct": 22,
+            "only_B_correct": 23
+          },
+          "matching": {
+            "duplicates": 0,
+            "matched": 500,
+            "unmatched_A": 0,
+            "unmatched_B": 0
+          },
+          "n": 500,
+          "normalized_margin_difference": {
+            "bootstrap_se": 0.007401202863048324,
+            "ci95_high": 0.006057550722756602,
+            "ci95_low": -0.02282792998927261,
+            "estimate": -0.008075186106321259
+          },
+          "option_set_brier_difference": {
+            "bootstrap_se": 0.015352952545653194,
+            "ci95_high": 0.0411430075140889,
+            "ci95_low": -0.01906732971221315,
+            "estimate": 0.010922961561179976
+          },
+          "option_set_gold_probability_difference": {
+            "bootstrap_se": 0.007041086465455815,
+            "ci95_high": 0.01150253779538017,
+            "ci95_low": -0.015886403596169676,
+            "estimate": -0.002357623770674052
+          },
+          "option_set_log_loss_difference": {
+            "bootstrap_se": 0.07368845900696525,
+            "ci95_high": 0.2685646599710651,
+            "ci95_low": -0.01938267944774412,
+            "estimate": 0.12757704260270578
+          },
+          "raw_margin_difference": {
+            "bootstrap_se": 0.0847962506700574,
+            "ci95_high": 0.009884538433805573,
+            "ci95_low": -0.32325557934246535,
+            "estimate": -0.15763308246870475
+          }
+        },
+        "piqa": {
+          "accuracy_A": 0.7100108813928183,
+          "accuracy_B": 0.7170837867247007,
+          "accuracy_difference": {
+            "bootstrap_se": 0.006889438257948223,
+            "ci95_high": 0.005984766050054407,
+            "ci95_low": -0.020674646354733407,
+            "estimate": -0.007072905331882481
+          },
+          "discordance": {
+            "both_correct": 1231,
+            "both_wrong": 446,
+            "mcnemar_exact_two_sided_p": 0.3443135145965888,
+            "only_A_correct": 74,
+            "only_B_correct": 87
+          },
+          "matching": {
+            "duplicates": 0,
+            "matched": 1838,
+            "unmatched_A": 0,
+            "unmatched_B": 0
+          },
+          "n": 1838,
+          "normalized_margin_difference": {
+            "bootstrap_se": 0.001251800252941567,
+            "ci95_high": 0.0034496838073513774,
+            "ci95_low": -0.0014070512816450258,
+            "estimate": 0.0010154556568023872
+          },
+          "option_set_brier_difference": {
+            "bootstrap_se": 0.00824706470566669,
+            "ci95_high": 0.013999719268871127,
+            "ci95_low": -0.018476144706736357,
+            "estimate": -0.0024189136605367104
+          },
+          "option_set_gold_probability_difference": {
+            "bootstrap_se": 0.00409457440983997,
+            "ci95_high": 0.008739756505203335,
+            "ci95_low": -0.007324128833181947,
+            "estimate": 0.0005833814249607168
+          },
+          "option_set_log_loss_difference": {
+            "bootstrap_se": 0.03016461210000857,
+            "ci95_high": 0.08165360589155282,
+            "ci95_low": -0.036183947672584066,
+            "estimate": 0.02262985591653858
+          },
+          "raw_margin_difference": {
+            "bootstrap_se": 0.05958509464593407,
+            "ci95_high": 0.08943217050106006,
+            "ci95_low": -0.1452791118519163,
+            "estimate": -0.027529559378281263
+          }
+        },
+        "winogrande": {
+          "accuracy_A": 0.5572217837411207,
+          "accuracy_B": 0.5603788476716653,
+          "accuracy_difference": {
+            "bootstrap_se": 0.014928723820064698,
+            "ci95_high": 0.026835043409629045,
+            "ci95_low": -0.03157063930544594,
+            "estimate": -0.0031570639305445935
+          },
+          "discordance": {
+            "both_correct": 528,
+            "both_wrong": 379,
+            "mcnemar_exact_two_sided_p": 0.8743952948595701,
+            "only_A_correct": 178,
+            "only_B_correct": 182
+          },
+          "matching": {
+            "duplicates": 0,
+            "matched": 1267,
+            "unmatched_A": 0,
+            "unmatched_B": 0
+          },
+          "n": 1267,
+          "normalized_margin_difference": {
+            "bootstrap_se": 0.0019872951005847797,
+            "ci95_high": 0.004946072888261745,
+            "ci95_low": -0.002880771536491704,
+            "estimate": 0.0010466870305920327
+          },
+          "option_set_brier_difference": {
+            "bootstrap_se": 0.011426464159433934,
+            "ci95_high": 0.01465369361443427,
+            "ci95_low": -0.02975321055980437,
+            "estimate": -0.0076991033370234175
+          },
+          "option_set_gold_probability_difference": {
+            "bootstrap_se": 0.005315069971874152,
+            "ci95_high": 0.012962670960679773,
+            "ci95_low": -0.0080700412459697,
+            "estimate": 0.002397034517479784
+          },
+          "option_set_log_loss_difference": {
+            "bootstrap_se": 0.01611555728067358,
+            "ci95_high": 0.012986396173216412,
+            "ci95_low": -0.050173889487350576,
+            "estimate": -0.018200866942893
+          },
+          "raw_margin_difference": {
+            "bootstrap_se": 0.028562327784561685,
+            "ci95_high": 0.062216866569936705,
+            "ci95_low": -0.049652776970866966,
+            "estimate": 0.005980620540612127
+          }
+        }
+      },
+      "warnings": [
+        "Intervals quantify evaluation-example uncertainty conditional on these checkpoints; they do not quantify pretraining-seed variance.",
+        "Task and pairwise results are exploratory multiple comparisons; emphasize effect sizes and intervals.",
+        "Margin aggregation is omitted because core tasks do not all use the same official raw-versus-length-normalized accuracy rule."
+      ]
+    },
+    {
+      "bootstrap_backend": "numpy-vectorized",
+      "bootstrap_resamples": 10000,
+      "condition_A": "span_mask",
+      "condition_B": "variable_span",
+      "core_unweighted_macro_accuracy_difference": {
+        "bootstrap_se": 0.004040268369031834,
+        "ci95_high": 0.006245459032379283,
+        "ci95_low": -0.009547144548598466,
+        "estimate": -0.0017674244015648266
+      },
+      "schema_version": "paired-eval/v1",
+      "seed": 12345,
+      "subtraction": "A-minus-B",
+      "tasks": {
+        "arc_challenge": {
+          "accuracy_A": 0.3447098976109215,
+          "accuracy_B": 0.3515358361774744,
+          "accuracy_difference": {
+            "bootstrap_se": 0.010295125701594554,
+            "ci95_high": 0.012798634812286689,
+            "ci95_low": -0.027303754266211604,
+            "estimate": -0.006825938566552901
+          },
+          "discordance": {
+            "both_correct": 336,
+            "both_wrong": 692,
+            "mcnemar_exact_two_sided_p": 0.5598211377107971,
+            "only_A_correct": 68,
+            "only_B_correct": 76
+          },
+          "matching": {
+            "duplicates": 0,
+            "matched": 1172,
+            "unmatched_A": 0,
+            "unmatched_B": 0
+          },
+          "n": 1172,
+          "normalized_margin_difference": {
+            "bootstrap_se": 0.0031698211653786394,
+            "ci95_high": 0.017118598711808892,
+            "ci95_low": 0.00457073990651169,
+            "estimate": 0.010864364683287163
+          },
+          "option_set_brier_difference": {
+            "bootstrap_se": 0.012262551474417975,
+            "ci95_high": 0.0148810002595919,
+            "ci95_low": -0.03269803621919833,
+            "estimate": -0.009035303119312192
+          },
+          "option_set_gold_probability_difference": {
+            "bootstrap_se": 0.005655113154508294,
+            "ci95_high": 0.017028381032065974,
+            "ci95_low": -0.00492154937898244,
+            "estimate": 0.006193952389066864
+          },
+          "option_set_log_loss_difference": {
+            "bootstrap_se": 0.051707946521502776,
+            "ci95_high": 0.04627458306711089,
+            "ci95_low": -0.15598303358904694,
+            "estimate": -0.05443031635360657
+          },
+          "raw_margin_difference": {
+            "bootstrap_se": 0.06248876841753313,
+            "ci95_high": 0.20528396751414463,
+            "ci95_low": -0.03897386146996931,
+            "estimate": 0.08549474016817979
+          }
+        },
+        "arc_easy": {
+          "accuracy_A": 0.6595117845117845,
+          "accuracy_B": 0.6279461279461279,
+          "accuracy_difference": {
+            "bootstrap_se": 0.007923084963075188,
+            "ci95_high": 0.04713804713804714,
+            "ci95_low": 0.015993265993265993,
+            "estimate": 0.03156565656565657
+          },
+          "discordance": {
+            "both_correct": 1355,
+            "both_wrong": 672,
+            "mcnemar_exact_two_sided_p": 7.030403569572885e-05,
+            "only_A_correct": 212,
+            "only_B_correct": 137
+          },
+          "matching": {
+            "duplicates": 0,
+            "matched": 2376,
+            "unmatched_A": 0,
+            "unmatched_B": 0
+          },
+          "n": 2376,
+          "normalized_margin_difference": {
+            "bootstrap_se": 0.002483858044974802,
+            "ci95_high": 0.02335262485114334,
+            "ci95_low": 0.013624902056018224,
+            "estimate": 0.01847942238077498
+          },
+          "option_set_brier_difference": {
+            "bootstrap_se": 0.007529602934356836,
+            "ci95_high": -0.005294660333497767,
+            "ci95_low": -0.03483109154539332,
+            "estimate": -0.02015714461443236
+          },
+          "option_set_gold_probability_difference": {
+            "bootstrap_se": 0.003991895361296483,
+            "ci95_high": 0.02179672302214576,
+            "ci95_low": 0.006054198549042787,
+            "estimate": 0.01397742789235803
+          },
+          "option_set_log_loss_difference": {
+            "bootstrap_se": 0.02105929898355448,
+            "ci95_high": 0.0018065350659321928,
+            "ci95_low": -0.08087681822425528,
+            "estimate": -0.039129489270852955
+          },
+          "raw_margin_difference": {
+            "bootstrap_se": 0.03731089289432091,
+            "ci95_high": 0.22953300343757196,
+            "ci95_low": 0.08433916066653002,
+            "estimate": 0.15604021329499243
+          }
+        },
+        "boolq": {
+          "accuracy_A": 0.518348623853211,
+          "accuracy_B": 0.5611620795107034,
+          "accuracy_difference": {
+            "bootstrap_se": 0.010681738455599407,
+            "ci95_high": -0.021712538226299694,
+            "ci95_low": -0.06391437308868501,
+            "estimate": -0.04281345565749235
+          },
+          "discordance": {
+            "both_correct": 1166,
+            "both_wrong": 906,
+            "mcnemar_exact_two_sided_p": 5.81539472450973e-05,
+            "only_A_correct": 529,
+            "only_B_correct": 669
+          },
+          "matching": {
+            "duplicates": 0,
+            "matched": 3270,
+            "unmatched_A": 0,
+            "unmatched_B": 0
+          },
+          "n": 3270,
+          "normalized_margin_difference": {
+            "bootstrap_se": 0.0037460509290612566,
+            "ci95_high": -0.018749422242031428,
+            "ci95_low": -0.03331218544739346,
+            "estimate": -0.02588684752689832
+          },
+          "option_set_brier_difference": {
+            "bootstrap_se": 0.005887471901304142,
+            "ci95_high": 0.04400185533543574,
+            "ci95_low": 0.020908148757915877,
+            "estimate": 0.03266968211373741
+          },
+          "option_set_gold_probability_difference": {
+            "bootstrap_se": 0.0029542160607287106,
+            "ci95_high": -0.012532804706524322,
+            "ci95_low": -0.024009529531119726,
+            "estimate": -0.01828397964713854
+          },
+          "option_set_log_loss_difference": {
+            "bootstrap_se": 0.00630122132596161,
+            "ci95_high": 0.04818197951057339,
+            "ci95_low": 0.023258813196864476,
+            "estimate": 0.035787731576642993
+          },
+          "raw_margin_difference": {
+            "bootstrap_se": 0.012978403873710177,
+            "ci95_high": -0.057050948660672625,
+            "ci95_low": -0.10746803506069591,
+            "estimate": -0.08235549215876728
+          }
+        },
+        "hellaswag": {
+          "accuracy_A": 0.5434176458872735,
+          "accuracy_B": 0.5449113722366062,
+          "accuracy_difference": {
+            "bootstrap_se": 0.0029042212201091295,
+            "ci95_high": 0.004282015534754033,
+            "ci95_low": -0.0070703047201752635,
+            "estimate": -0.0014937263493328022
+          },
+          "discordance": {
+            "both_correct": 5041,
+            "both_wrong": 4154,
+            "mcnemar_exact_two_sided_p": 0.6305099351984185,
+            "only_A_correct": 416,
+            "only_B_correct": 431
+          },
+          "matching": {
+            "duplicates": 0,
+            "matched": 10042,
+            "unmatched_A": 0,
+            "unmatched_B": 0
+          },
+          "n": 10042,
+          "normalized_margin_difference": {
+            "bootstrap_se": 0.00041173277977593533,
+            "ci95_high": 0.0006124555738292158,
+            "ci95_low": -0.0009976732283732504,
+            "estimate": -0.0001916881131840027
+          },
+          "option_set_brier_difference": {
+            "bootstrap_se": 0.003541510349653792,
+            "ci95_high": 0.008848878928099654,
+            "ci95_low": -0.00512380600687075,
+            "estimate": 0.001966070496436256
+          },
+          "option_set_gold_probability_difference": {
+            "bootstrap_se": 0.0016465541581225066,
+            "ci95_high": 0.0012924429296478715,
+            "ci95_low": -0.005211650507140256,
+            "estimate": -0.001954162512494029
+          },
+          "option_set_log_loss_difference": {
+            "bootstrap_se": 0.0348350666933906,
+            "ci95_high": 0.1755898273051106,
+            "ci95_low": 0.04042944531670271,
+            "estimate": 0.107108161549211
+          },
+          "raw_margin_difference": {
+            "bootstrap_se": 0.04592267869425125,
+            "ci95_high": -0.06646067564199211,
+            "ci95_low": -0.24800013689800302,
+            "estimate": -0.15713888670406562
+          }
+        },
+        "openbookqa": {
+          "accuracy_A": 0.364,
+          "accuracy_B": 0.358,
+          "accuracy_difference": {
+            "bootstrap_se": 0.015574633959175292,
+            "ci95_high": 0.038,
+            "ci95_low": -0.024,
+            "estimate": 0.006
+          },
+          "discordance": {
+            "both_correct": 150,
+            "both_wrong": 289,
+            "mcnemar_exact_two_sided_p": 0.798152627305718,
+            "only_A_correct": 32,
+            "only_B_correct": 29
+          },
+          "matching": {
+            "duplicates": 0,
+            "matched": 500,
+            "unmatched_A": 0,
+            "unmatched_B": 0
+          },
+          "n": 500,
+          "normalized_margin_difference": {
+            "bootstrap_se": 0.007197245451847891,
+            "ci95_high": 0.012203706042273683,
+            "ci95_low": -0.015662850470390993,
+            "estimate": -0.0017019063324379164
+          },
+          "option_set_brier_difference": {
+            "bootstrap_se": 0.016443558532775206,
+            "ci95_high": 0.0437072224178553,
+            "ci95_low": -0.020497230949759884,
+            "estimate": 0.011873416378473754
+          },
+          "option_set_gold_probability_difference": {
+            "bootstrap_se": 0.00735556611403641,
+            "ci95_high": 0.01266511656955132,
+            "ci95_low": -0.01597906332291296,
+            "estimate": -0.0019086736772704835
+          },
+          "option_set_log_loss_difference": {
+            "bootstrap_se": 0.07285169425052866,
+            "ci95_high": 0.24454600865512094,
+            "ci95_low": -0.04257704422702794,
+            "estimate": 0.10185833272916879
+          },
+          "raw_margin_difference": {
+            "bootstrap_se": 0.0864931672304423,
+            "ci95_high": 0.09931195018178915,
+            "ci95_low": -0.24207323512494985,
+            "estimate": -0.06879778448248544
+          }
+        },
+        "piqa": {
+          "accuracy_A": 0.721436343852013,
+          "accuracy_B": 0.7170837867247007,
+          "accuracy_difference": {
+            "bootstrap_se": 0.0070838650737430585,
+            "ci95_high": 0.017954298150163223,
+            "ci95_low": -0.009793253536452665,
+            "estimate": 0.004352557127312296
+          },
+          "discordance": {
+            "both_correct": 1239,
+            "both_wrong": 433,
+            "mcnemar_exact_two_sided_p": 0.5870535639169906,
+            "only_A_correct": 87,
+            "only_B_correct": 79
+          },
+          "matching": {
+            "duplicates": 0,
+            "matched": 1838,
+            "unmatched_A": 0,
+            "unmatched_B": 0
+          },
+          "n": 1838,
+          "normalized_margin_difference": {
+            "bootstrap_se": 0.0013090927482332746,
+            "ci95_high": 0.006943730893204544,
+            "ci95_low": 0.0017893728553795127,
+            "estimate": 0.004405920539352678
+          },
+          "option_set_brier_difference": {
+            "bootstrap_se": 0.008978075943834613,
+            "ci95_high": 0.009123057089213023,
+            "ci95_low": -0.026393388900701004,
+            "estimate": -0.00892938518029831
+          },
+          "option_set_gold_probability_difference": {
+            "bootstrap_se": 0.004541135333064469,
+            "ci95_high": 0.014924370394372713,
+            "ci95_low": -0.0029309334307441536,
+            "estimate": 0.006009699767712784
+          },
+          "option_set_log_loss_difference": {
+            "bootstrap_se": 0.03422975717865325,
+            "ci95_high": 0.08897929115834191,
+            "ci95_low": -0.04334712027392037,
+            "estimate": 0.021940747711911686
+          },
+          "raw_margin_difference": {
+            "bootstrap_se": 0.06041267815394105,
+            "ci95_high": 0.26244444886600127,
+            "ci95_low": 0.024403825767186412,
+            "estimate": 0.1436360808506366
+          }
+        },
+        "winogrande": {
+          "accuracy_A": 0.5572217837411207,
+          "accuracy_B": 0.5603788476716653,
+          "accuracy_difference": {
+            "bootstrap_se": 0.015255260153739578,
+            "ci95_high": 0.026045777426992895,
+            "ci95_low": -0.03314917127071823,
+            "estimate": -0.0031570639305445935
+          },
+          "discordance": {
+            "both_correct": 521,
+            "both_wrong": 372,
+            "mcnemar_exact_two_sided_p": 0.8767484404623183,
+            "only_A_correct": 185,
+            "only_B_correct": 189
+          },
+          "matching": {
+            "duplicates": 0,
+            "matched": 1267,
+            "unmatched_A": 0,
+            "unmatched_B": 0
+          },
+          "n": 1267,
+          "normalized_margin_difference": {
+            "bootstrap_se": 0.0018755817885963704,
+            "ci95_high": 0.006572041096320386,
+            "ci95_low": -0.000788370074887808,
+            "estimate": 0.002776370488905422
+          },
+          "option_set_brier_difference": {
+            "bootstrap_se": 0.011212429951263848,
+            "ci95_high": -0.004936724405920859,
+            "ci95_low": -0.04871377455118023,
+            "estimate": -0.026692201174253815
+          },
+          "option_set_gold_probability_difference": {
+            "bootstrap_se": 0.005222153434079403,
+            "ci95_high": 0.020242355448300442,
+            "ci95_low": -0.00034808463710250115,
+            "estimate": 0.00992629412924659
+          },
+          "option_set_log_loss_difference": {
+            "bootstrap_se": 0.01628831988062471,
+            "ci95_high": -0.016810362144877338,
+            "ci95_low": -0.0808827071035757,
+            "estimate": -0.04891384332863706
+          },
+          "raw_margin_difference": {
+            "bootstrap_se": 0.028742191831760383,
+            "ci95_high": 0.1133308001935716,
+            "ci95_low": 0.0007108565903637181,
+            "estimate": 0.05680628042363507
           }
         }
       },
