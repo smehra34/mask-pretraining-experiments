@@ -119,6 +119,37 @@ class ConfigTests(unittest.TestCase):
                 expected_objectives.add(("0", "0.15", "variable_span", "5"))
             self.assertEqual(objectives, expected_objectives)
 
+    def test_second_1b_objective_screen_is_seed_67_ntp_mtp_and_variable_span(self) -> None:
+        name, experiments = load_collection(
+            ROOT / "collections/1b_objective_screen_2.yaml"
+        )
+
+        self.assertEqual(name, "1b-objective-screen-2")
+        self.assertEqual(
+            [experiment.condition_name for experiment in experiments],
+            ["ntp", "mtp-2token", "meap-variable-span-015-max5"],
+        )
+        self.assertEqual(
+            {experiment.main.environment["SEED"] for experiment in experiments},
+            {"67"},
+        )
+        self.assertEqual(
+            {
+                (
+                    experiment.main.environment["MTP_NUM_LAYERS"],
+                    experiment.main.environment["INPUT_MASK_RATIO"],
+                )
+                for experiment in experiments
+            },
+            {("0", "0.0"), ("1", "0.0"), ("0", "0.15")},
+        )
+        self.assertEqual(
+            {experiment.main.environment["INPUT_MASK_STRATEGY"] for experiment in experiments},
+            {"random", "variable_span"},
+        )
+        variable_span = experiments[2].main.environment
+        self.assertEqual(variable_span["INPUT_MASK_SPAN_LENGTH"], "5")
+
     def test_training_launchers_enable_cumulative_flop_progress_logging(self) -> None:
         launcher_paths = {
             load_experiment(condition).submission_script

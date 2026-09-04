@@ -232,6 +232,15 @@ screen additionally contains variable-span MEAP with maximum length five:
 /usr/bin/python3.11 mask_exp.py plan-collection collections/1b_objective_screen.yaml
 ```
 
+The follow-up `1b-objective-screen-2` study replicates the same 1.15B recipe
+with seed 67. Its collection contains NTP, two-token MTP, and the selected
+variable-span masking condition using the same truncated-geometric 1–5 span
+distribution as the first screen:
+
+```bash
+/usr/bin/python3.11 mask_exp.py plan-collection collections/1b_objective_screen_2.yaml
+```
+
 Before launching the 300M objective screen, calibrate its Muon peak learning
 rate and spectral scale with the short, unmasked sweep:
 

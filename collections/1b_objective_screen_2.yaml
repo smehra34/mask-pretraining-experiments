@@ -1,0 +1,6 @@
+schema_version: 1
+name: 1b-objective-screen-2
+conditions:
+  - ../studies/1b_objective_screen_2/ntp.yaml
+  - ../studies/1b_objective_screen_2/mtp-2token.yaml
+  - ../studies/1b_objective_screen_2/meap-variable-span-015-max5.yaml
