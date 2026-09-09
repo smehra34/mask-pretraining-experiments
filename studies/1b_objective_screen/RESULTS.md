@@ -18,11 +18,9 @@ The most defensible conclusion is:
   clean next-token modeling and the measured downstream tasks.
 - Random masking is broadly neutral: it performs within the same downstream
   regime without a consistent advantage.
-- Variable-span masking is the strongest masking variant overall. It nearly
-  matches random masking at the cooled endpoint, has the second-best average
-  checkpoint trajectory, and avoids fixed-span masking's large clean-loss and
-  Paloma regressions. Its remaining gap to MTP is modest but detectable in the
-  paired final-core evaluation.
+- Variable-span masking is the strongest masking variant within this seed, but
+  that result does not replicate at seed 67. In the replication it trails both
+  NTP and MTP on zero-shot core, five-shot core, validation loss, and Paloma.
 - Additional seeds would be required to establish small differences between
   these objectives reliably.
 
@@ -69,6 +67,46 @@ difference disappears under flexible extraction, suggesting an answer-format
 difference rather than weaker mathematical ability.
 Variable-span masking has the highest numerical flexible-extraction score, but
 the 0.07-point lead over NTP is negligible relative to sampling uncertainty.
+
+## Five-shot core evaluation
+
+The final checkpoints were also evaluated with five fixed, deterministically
+sampled demonstrations per task. This is a separate protocol from the zero-shot
+`core` results above; it uses the same seven tasks and test examples.
+
+| Objective | Zero-shot core | Five-shot core | Five-shot minus zero-shot |
+|---|---:|---:|---:|
+| NTP | 52.53% | 56.47% | +3.94 |
+| MTP | **54.17%** | **57.97%** | +3.80 |
+| Random masking | 53.16% | 56.05% | +2.89 |
+| Span masking | 52.98% | 54.39% | +1.41 |
+| Variable-span masking | 53.16% | 55.17% | +2.02 |
+
+Five-shot prompting preserves MTP's lead over NTP (+1.50 points) and makes its
+lead over every masking objective larger. Paired normal-approximation intervals
+over matched evaluation examples are [-2.27, -0.73] for NTP minus MTP,
+[+1.15, +2.69] for MTP minus random masking, [+2.76, +4.41] for MTP minus fixed
+span, and [+1.99, +3.60] for MTP minus variable span. These intervals condition
+on the trained checkpoints and fixed demonstration sample; they do not include
+training-seed or demonstration-selection uncertainty.
+
+| Task | NTP five-shot | MTP five-shot | MTP−NTP |
+|---|---:|---:|---:|
+| HellaSwag | 56.62% | 57.67% | +1.05 |
+| PIQA | 72.31% | 72.80% | +0.49 |
+| WinoGrande | 57.30% | 59.75% | +2.45 |
+| ARC-Easy | 70.88% | 72.01% | +1.14 |
+| ARC-Challenge | 39.25% | 40.36% | +1.11 |
+| OpenBookQA | 36.80% | 41.00% | +4.20 |
+| BoolQ | 62.11% | 62.20% | +0.09 |
+
+Unlike zero-shot, the five-shot MTP advantage is not driven by BoolQ: BoolQ is
+effectively tied, while HellaSwag, both ARC tasks, WinoGrande, and OpenBookQA all
+favor MTP. This is useful evidence that the original aggregate result was not
+only a zero-shot prompt-calibration artifact. It also changes the masking
+ranking: NTP and random masking exceed variable span, and fixed span is clearly
+last. Thus five-shot strengthens the MTP signal but weakens the case that
+variable span is the strongest masking result under every downstream protocol.
 
 ## Paired evaluation-example uncertainty
 
@@ -198,15 +236,17 @@ method. If simplicity or direct comparability with standard language-model
 training is more important, NTP also remains defensible because the absolute
 differences are small.
 
-Variable-span masking is the most promising masking result. It retains the
-competitive downstream behavior of masking while materially repairing fixed
-span's clean-loss and Paloma regressions. It does not beat MTP at the final
-core checkpoint, and its near-tie with random masking means this screen does
-not establish that geometric spans are better than independent masks. A
-second-seed comparison of MTP and the selected masking variant is the most
-useful next test. Raw validation loss is directly comparable across
-objectives, but it should not be treated as the sole measure of masked
-prediction or downstream utility.
+Variable-span masking is the most promising masking result in this original
+seed. It retains the competitive downstream behavior of masking while
+materially repairing fixed span's clean-loss and Paloma regressions. It does
+not beat MTP at the final core checkpoint, and its near-tie with random masking
+means this screen does not establish that geometric spans are better than
+independent masks. The completed seed-67 replication weakens the case further:
+variable span scores 52.68% zero-shot and 55.92% five-shot, below seed-67 NTP
+(54.38%, 56.59%) and MTP (54.41%, 57.92%), and has worse validation loss and
+Paloma perplexity than both. MTP is therefore the more defensible objective for
+an exploratory scale-up, with matched NTP retained as the control. Full
+replication details are in `../1b_objective_screen_2/RESULTS.md`.
 
 ## Paloma evaluation
 
@@ -235,7 +275,9 @@ clearly worse.
 MTP is effectively neutral at 300M but clearly beneficial at 1.1B. Random
 masking changes from a clear regression at 300M to a small aggregate
 improvement at 1.1B, while fixed-span masking is harmful at both scales. The
-variable-span result shows that the fixed-span conclusion should not be
-generalized to all contiguous masking: a short-span-heavy distribution largely
-closes the clean-model gap. This motivates additional seeds and larger-scale
-testing, while keeping claims provisional until those runs are available.
+original variable-span result shows that the fixed-span conclusion should not
+be generalized mechanically to all contiguous masking: a short-span-heavy
+distribution can close much of the clean-model gap in one run. However, the
+seed-67 replication is worse than both NTP and MTP on core, validation, and
+Paloma, so the evidence no longer motivates preferring this masking recipe for
+scale-up.
