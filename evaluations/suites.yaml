@@ -9,9 +9,16 @@ backend:
   lm_eval_source: /users/smehra/developer/lm-eval-v0.4.12
   lm_eval_commit: 6d642546f4688648fced259eb3302efd36ece5af
   lm_eval_patch: megatron-inference-rank0-wandb-atomic-cache-sample-identity-20260901
+  # Install declared runtime dependencies once per node. PYTHONPATH selects the
+  # exact patched source without needlessly building an lm-eval wheel per job.
+  install_commands: >-
+    python -m pip install -r
+    /users/smehra/developer/mask-experiment-manager/evaluations/lm-eval-runtime-requirements.txt
   output_root: /capstor/scratch/cscs/smehra/megatron-runs/evaluations
   request_cache: /iopsstor/scratch/cscs/smehra/lm-eval/request-cache-v0.4.12
-  hf_home: /iopsstor/scratch/cscs/smehra/huggingface/lm-eval-v0.4.12
+  # Repo-ID resolution remains online so automatic scratch cleanup is repaired
+  # by downloading missing assets back into the shared IOPS cache.
+  hf_home: /iopsstor/scratch/cscs/smehra/hf_home
   container_edf: test-env
   account: infra01
   nodes: 1

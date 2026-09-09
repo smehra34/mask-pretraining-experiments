@@ -99,6 +99,14 @@ class EvaluationTests(unittest.TestCase):
             )
             script = render_spellbook_script(evaluation, log_dir=Path("logs"))
             self.assertIn(f"load={evaluation.checkpoint_dir}", script)
+            self.assertIn(
+                'export HF_HOME="/iopsstor/scratch/cscs/smehra/hf_home"', script
+            )
+            self.assertIn("export HF_HUB_OFFLINE=0", script)
+            self.assertIn(
+                "python -m pip install -r /users/smehra/developer/mask-experiment-manager/evaluations/lm-eval-runtime-requirements.txt",
+                script,
+            )
             self.assertIn("--model megatron_lm", script)
             self.assertIn("--cache_requests true", script)
             self.assertIn("WANDB_RUN_GROUP=\"eval-test\"", script)

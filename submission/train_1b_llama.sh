@@ -20,6 +20,7 @@ COOLDOWN_TOKENS=${COOLDOWN_TOKENS:-}
 
 DATASETS=${DATASETS:-/iopsstor/scratch/cscs/smehra/tokenized_datasets/dclm-edu__mistral-7b-v0.3}
 TOKENIZER_MODEL=${TOKENIZER_MODEL:-mistralai/Mistral-7B-v0.3}
+HF_HOME=${HF_HOME:-/iopsstor/scratch/cscs/$USER/hf_home}
 MBS=${MBS:-8}
 GBS=${GBS:-1024}
 SEQ_LEN=${SEQ_LEN:-4096}
@@ -481,7 +482,12 @@ CMD_PREFIX=(numactl --membind=0-3)
 # the container interpreter sees the pinned NVRx distribution and this checkout.
 RUNTIME_ENV=(
   env
+  # The EDF image supplies its own CA bundle. Do not inherit a host-specific
+  # SSL_CERT_FILE path that may not exist inside the container.
+  -u SSL_CERT_FILE
   "PYTHONPATH=$PYTHONPATH"
+  "HF_HOME=$HF_HOME"
+  "HF_HUB_OFFLINE=0"
   "WANDB_RUN_GROUP=$WANDB_GROUP"
   "WANDB_TAGS=$WANDB_TAGS"
 )

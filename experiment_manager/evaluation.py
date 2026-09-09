@@ -376,6 +376,7 @@ def spellbook_config(evaluation: ResolvedEvaluation, *, log_dir: Path):
         lm_eval_install_args=str(
             backend.get("lm_eval_install_args", "--no-build-isolation")
         ),
+        install_commands=str(backend.get("install_commands", "")),
         dataset_prefetch=evaluation.dataset_prefetch,
         env_vars=env_vars,
     )

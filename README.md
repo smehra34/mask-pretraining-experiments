@@ -112,6 +112,15 @@ its expected commit are pinned in the suite configuration so prompts, datasets,
 metrics, and backend behavior remain reproducible without requiring outbound
 GitHub access from compute nodes.
 
+The pinned local checkout's declared dependencies are installed from
+`evaluations/lm-eval-runtime-requirements.txt` once per evaluation node, so the
+runtime remains complete when the selected EDF image changes. The job imports
+the patched checkout directly through `PYTHONPATH` rather than rebuilding it.
+
+Training and evaluation resolve Hugging Face repository IDs through the shared
+`HF_HOME` on IOPS scratch. Online resolution stays enabled so a missing or newly
+requested asset is downloaded again after automatic scratch cleanup.
+
 Each evaluation targets an immutable training run record, a stage, and either
 an explicit checkpoint iteration or the stage's latest checkpoint:
 

@@ -1,0 +1,19 @@
+# Runtime dependencies declared by lm-eval v0.4.12, plus the tokenizer backend
+# used by these experiments. Keep this aligned with the pinned local checkout.
+datasets>=2.16.0
+numpy
+evaluate>=0.4.0
+jinja2
+pytablewriter
+rouge-score>=0.0.4
+sacrebleu>=1.5.0
+scikit-learn>=0.24.1
+sqlitedict
+dill
+word2number
+more_itertools
+typing_extensions
+tqdm>=4.59.0
+sentencepiece>=0.1.98
+# requests 2.x warns on chardet 6, which pytablewriter otherwise permits.
+chardet<6
