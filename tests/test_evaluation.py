@@ -81,11 +81,13 @@ class EvaluationTests(unittest.TestCase):
         _, suites, _ = load_evaluation_config(EVAL_CONFIG)
         self.assertEqual(
             set(suites),
-            {"smoke", "core", "math", "code", "paloma", "paloma_smoke"},
+            {"smoke", "core", "core_5shot", "math", "code", "paloma", "paloma_smoke"},
         )
-        for name in ("core", "math", "code"):
+        for name in ("core", "core_5shot", "math", "code"):
             self.assertTrue(suites[name].log_samples)
             self.assertFalse(suites[name].write_out)
+        self.assertEqual(suites["core_5shot"].tasks, suites["core"].tasks)
+        self.assertEqual(suites["core_5shot"].num_fewshot, 5)
         self.assertEqual(suites["smoke"].limit, 20)
         self.assertFalse(suites["math"].unsafe_code)
         self.assertTrue(suites["code"].unsafe_code)

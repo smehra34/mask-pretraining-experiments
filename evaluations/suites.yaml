@@ -47,6 +47,14 @@ suites:
     log_samples: true
     write_out: false
 
+  core_5shot:
+    description: Five-shot likelihood-based general and commonsense evaluation within the 4096-token context.
+    tasks: [hellaswag, piqa, winogrande, arc_easy, arc_challenge, openbookqa, boolq]
+    num_fewshot: 5
+    run_time: 00:45:00
+    log_samples: true
+    write_out: false
+
   math:
     description: Focused deterministic generative math evaluation for primary checkpoints.
     tasks: [gsm8k]
