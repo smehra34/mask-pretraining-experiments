@@ -138,13 +138,17 @@ an explicit checkpoint iteration or the stage's latest checkpoint:
   --stage main --step latest --suite core --suite math
 ```
 
-Frozen training records can retain scheduler settings that later become stale.
-`resume` and `submit-cooldowns` therefore accept explicit scheduler-only
-overrides without changing the frozen scientific configuration:
+Training submissions accept explicit scheduler-only overrides without
+changing the scientific configuration. `submit-main` accepts `--nodes` and
+`--sbatch-time`; frozen runs accept `--sbatch-time` through `resume` and
+`submit-cooldowns` when their recorded scheduler settings become stale:
 
 ```bash
 /usr/bin/python3.11 mask_exp.py resume RUN_DIRECTORY --stage main \
   --without-reservation --sbatch-time 01:15:00
+
+/usr/bin/python3.11 mask_exp.py submit-main CONDITION.yaml \
+  --nodes 4 --sbatch-time 04:00:00
 ```
 
 The exact overridden command is appended to the run's submission history.

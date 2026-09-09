@@ -39,6 +39,10 @@ def _submission_overrides(command: list[str], args: argparse.Namespace) -> list[
     if walltime:
         actual = [item for item in actual if not item.startswith("--time=")]
         actual.insert(1, f"--time={walltime}")
+    nodes = getattr(args, "nodes", None)
+    if nodes:
+        actual = [item for item in actual if not item.startswith("--nodes=")]
+        actual.insert(1, f"--nodes={nodes}")
     return actual
 
 
@@ -118,7 +122,7 @@ def cmd_submit_main(args: argparse.Namespace) -> None:
     run_dir = create_run_record(experiment)
     _, resolved = load_run_record(run_dir)
     main_stage = resolved_stage(resolved, "main")
-    command = command_from_record(resolved, main_stage)
+    command = _submission_overrides(command_from_record(resolved, main_stage), args)
     job_id = submit(command)
     append_submission(
         run_dir, stage_key="main", job_id=job_id, command=command, action="submit-main"
@@ -327,6 +331,9 @@ def build_parser() -> argparse.ArgumentParser:
     ):
         command = subparsers.add_parser(name, help=help_text)
         command.add_argument("config", help="Path to a condition YAML")
+        if name == "submit-main":
+            command.add_argument("--sbatch-time", help="Override Slurm walltime (HH:MM:SS)")
+            command.add_argument("--nodes", type=int, help="Override the requested Slurm nodes")
         command.set_defaults(handler=handler)
 
     for name, help_text, handler in (

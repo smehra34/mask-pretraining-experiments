@@ -19,7 +19,11 @@ SCRATCH = "/iopsstor/scratch/cscs/smehra"
 
 class RecordTests(unittest.TestCase):
     def test_scheduler_overrides_remove_expired_reservation_and_replace_time(self) -> None:
-        args = type("Args", (), {"without_reservation": True, "sbatch_time": "01:15:00"})()
+        args = type(
+            "Args",
+            (),
+            {"without_reservation": True, "sbatch_time": "01:15:00", "nodes": 4},
+        )()
         command = [
             "sbatch",
             "--account=infra01",
@@ -29,7 +33,13 @@ class RecordTests(unittest.TestCase):
         ]
         self.assertEqual(
             _submission_overrides(command, args),
-            ["sbatch", "--time=01:15:00", "--account=infra01", "launcher.sh"],
+            [
+                "sbatch",
+                "--nodes=4",
+                "--time=01:15:00",
+                "--account=infra01",
+                "launcher.sh",
+            ],
         )
 
     def setUp(self) -> None:
