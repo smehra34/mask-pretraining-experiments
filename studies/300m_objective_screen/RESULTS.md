@@ -74,6 +74,35 @@ of the apparently largest differences occur on the smaller or less stable
 benchmarks. For example, random masking's macro lead is helped by BoolQ and
 OpenBookQA, but it does not lead HellaSwag, PIQA, WinoGrande, or ARC-Challenge.
 
+## Five-shot core evaluation
+
+The final checkpoints, including the new variable-span condition, were also
+evaluated with five fixed demonstrations per task.
+
+| Objective | Zero-shot core | Five-shot core | Five-shot minus zero-shot |
+|---|---:|---:|---:|
+| NTP | 46.68% | 47.16% | +0.49 |
+| MTP | 46.76% | 47.11% | +0.35 |
+| Random masking | **47.09%** | **47.52%** | +0.43 |
+| Span masking | 46.70% | 47.13% | +0.43 |
+| Variable-span masking | 46.25% | 47.09% | +0.84 |
+
+Five-shot prompting does not reveal a clearer objective effect at 300M. The
+entire five-shot spread is 0.43 points, almost identical to the original
+zero-shot spread, and every pairwise paired normal-approximation interval
+includes zero. MTP minus NTP is -0.05 points with an approximate 95% interval
+[-0.83, +0.73]; random masking minus variable span is +0.43 points with
+[-0.35, +1.21]. Random masking remains nominally first, but the ranking is not
+resolved.
+
+ARC-Easy moves upward by roughly 6--8 points for every objective under five
+shots, yet its between-objective spread collapses to 0.25 points. HellaSwag
+still shows small objective differences, but they conflict with other tasks.
+The result therefore reinforces the original conclusion: the evaluation can
+detect a shared benefit from task demonstrations, but it still cannot reliably
+distinguish training objectives at 300M. Variable span also lies in the same
+unresolved performance band rather than providing a new winner.
+
 ## Paired evaluation-example uncertainty
 
 The final-checkpoint evaluations were rerun with sample logging and matched by
