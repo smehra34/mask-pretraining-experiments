@@ -136,6 +136,13 @@ an explicit checkpoint iteration or the stage's latest checkpoint:
 # Submit multiple independent suite jobs for the same checkpoint.
 /usr/bin/python3.11 mask_exp.py submit-eval RUN_DIRECTORY \
   --stage main --step latest --suite core --suite math
+
+# Serialize evaluations that share a W&B run, and optionally override walltime.
+/usr/bin/python3.11 mask_exp.py submit-eval RUN_DIRECTORY \
+  --stage main --step 19074 --suite core --dependency PREVIOUS_EVAL_JOB_ID
+/usr/bin/python3.11 mask_exp.py submit-eval RUN_DIRECTORY \
+  --stage cooldown-from-0034333 --step latest --suite paloma \
+  --sbatch-time 01:45:00
 ```
 
 Training submissions accept explicit scheduler-only overrides without

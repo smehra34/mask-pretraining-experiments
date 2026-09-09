@@ -285,7 +285,9 @@ def cmd_submit_eval(args: argparse.Namespace) -> None:
     for evaluation in _resolved_evaluations(args, require_checkpoint=True):
         record_dir = create_evaluation_record(evaluation)
         command = ["sbatch", str(record_dir / "submit.sh")]
-        job_id = submit(command)
+        if args.sbatch_time:
+            command.insert(1, f"--time={args.sbatch_time}")
+        job_id = submit(command, dependency=args.dependency)
         append_evaluation_submission(record_dir, job_id)
         print(f"Submitted {evaluation.suite.name} evaluation as job {job_id}")
         print(f"Evaluation record: {record_dir}")
@@ -312,6 +314,14 @@ def _add_evaluation_arguments(command: argparse.ArgumentParser) -> None:
         help="Evaluation suite/backend YAML",
     )
     command.add_argument("--skip-checkpoint-check", action="store_true")
+    command.add_argument(
+        "--dependency",
+        help="Submit with an afterok dependency on this job ID (submit-eval only)",
+    )
+    command.add_argument(
+        "--sbatch-time",
+        help="Override the evaluation suite's Slurm walltime (submit-eval only)",
+    )
     command.add_argument(
         "--allow-unsafe-code",
         action="store_true",

@@ -8,6 +8,7 @@ from unittest.mock import patch
 
 import yaml
 
+from experiment_manager.cli import build_parser
 from experiment_manager.config import load_experiment
 from experiment_manager.evaluation import (
     create_evaluation_record,
@@ -24,6 +25,22 @@ EVAL_CONFIG = ROOT / "evaluations/suites.yaml"
 
 
 class EvaluationTests(unittest.TestCase):
+    def test_submit_eval_accepts_dependency(self) -> None:
+        args = build_parser().parse_args(
+            [
+                "submit-eval",
+                "run-record",
+                "--suite",
+                "core",
+                "--dependency",
+                "12345",
+                "--sbatch-time",
+                "01:30:00",
+            ]
+        )
+        self.assertEqual(args.dependency, "12345")
+        self.assertEqual(args.sbatch_time, "01:30:00")
+
     def setUp(self) -> None:
         self.environment = patch.dict(os.environ, {"SCRATCH": SCRATCH, "PALOMA_DATA_ROOT": "/tmp/paloma"})
         self.environment.start()
