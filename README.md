@@ -244,8 +244,8 @@ should be interpreted as within-study diagnostics.
 ## Defining experiments
 
 The two objective screens contain NTP, native Megatron two-token MTP
-(one sequential MTP layer), 15% random MEAP, and 15% span-5 MEAP. The 1B
-screen additionally contains variable-span MEAP with maximum length five:
+(one sequential MTP layer), 15% random MEAP, 15% span-5 MEAP, and
+variable-span MEAP with maximum length five:
 
 ```bash
 /usr/bin/python3.11 mask_exp.py plan-collection collections/300m_objective_screen.yaml

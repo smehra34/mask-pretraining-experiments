@@ -95,7 +95,7 @@ class ConfigTests(unittest.TestCase):
                 ROOT / f"collections/{size}_objective_screen.yaml"
             )
             self.assertEqual(name, f"{size}-objective-screen")
-            expected_count = 5 if size == "1b" else 4
+            expected_count = 5
             self.assertEqual(len(experiments), expected_count)
             self.assertEqual(
                 len({item.experiment_name for item in experiments}), expected_count
@@ -115,8 +115,7 @@ class ConfigTests(unittest.TestCase):
                 ("0", "0.15", "random", "1"),
                 ("0", "0.15", "span", "5"),
             }
-            if size == "1b":
-                expected_objectives.add(("0", "0.15", "variable_span", "5"))
+            expected_objectives.add(("0", "0.15", "variable_span", "5"))
             self.assertEqual(objectives, expected_objectives)
 
     def test_second_1b_objective_screen_is_seed_67_ntp_mtp_and_variable_span(self) -> None:
