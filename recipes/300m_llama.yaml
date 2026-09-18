@@ -15,7 +15,8 @@ execution:
     - --gpus-per-node=4
     - --cpus-per-task=72
     - --mem=460000
-    - --no-requeue
+    # Allow Slurm to automatically requeue after preemption.
+    - --requeue
 
 environment:
   DATASETS: /iopsstor/scratch/cscs/smehra/tokenized_datasets/dclm-edu__mistral-7b-v0.3

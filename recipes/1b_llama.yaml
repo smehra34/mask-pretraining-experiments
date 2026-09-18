@@ -17,7 +17,8 @@ execution:
     - --gpus-per-node=4
     - --cpus-per-task=72
     - --mem=460000
-    - --no-requeue
+    # Allow Slurm to automatically requeue after preemption.
+    - --requeue
 
 # These are the invariant settings for every condition using this recipe.
 # Conditions may override only keys declared in this mapping.

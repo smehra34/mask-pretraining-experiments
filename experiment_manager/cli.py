@@ -35,6 +35,9 @@ def _submission_overrides(command: list[str], args: argparse.Namespace) -> list[
     actual = list(command)
     if getattr(args, "without_reservation", False):
         actual = [item for item in actual if not item.startswith("--reservation=")]
+    if getattr(args, "requeue", False):
+        actual = [item for item in actual if item not in {"--no-requeue", "--requeue"}]
+        actual.insert(1, "--requeue")
     partition = getattr(args, "sbatch_partition", None)
     if partition:
         actual = [item for item in actual if not item.startswith("--partition=")]
@@ -380,7 +383,12 @@ def build_parser() -> argparse.ArgumentParser:
     resume.add_argument("--stage", required=True, help="main or cooldown-from-NNNNNNN")
     resume.add_argument("--skip-checkpoint-check", action="store_true")
     resume.add_argument("--without-reservation", action="store_true")
+    resume.add_argument("--requeue", action="store_true")
     resume.add_argument("--sbatch-time", help="Override frozen Slurm walltime (HH:MM:SS)")
+    resume.add_argument("--nodes", type=int, help="Override the requested Slurm nodes")
+    resume.add_argument(
+        "--sbatch-partition", help="Override the Slurm partition for this submission"
+    )
     resume.set_defaults(handler=cmd_resume)
 
     status = subparsers.add_parser("status", help="Show recorded and current Slurm status")
