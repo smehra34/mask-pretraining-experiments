@@ -243,9 +243,10 @@ should be interpreted as within-study diagnostics.
 
 ## Defining experiments
 
-The two objective screens contain NTP, native Megatron two-token MTP
-(one sequential MTP layer), 15% random MEAP, 15% span-5 MEAP, and
-variable-span MEAP with maximum length five:
+The 300M and original 1.1B screens contain NTP, native Megatron two-token MTP
+(one sequential MTP layer), a three-token MTP variant that replays one shared
+MTP layer to predict both the second and third next tokens, 15% random MEAP,
+15% span-5 MEAP, and variable-span MEAP with maximum length five:
 
 ```bash
 /usr/bin/python3.11 mask_exp.py plan-collection collections/300m_objective_screen.yaml

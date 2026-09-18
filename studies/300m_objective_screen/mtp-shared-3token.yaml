@@ -1,0 +1,14 @@
+schema_version: 1
+recipe: ../../recipes/300m_llama.yaml
+study: 300m-objective-screen
+name: mtp-shared-3token
+description: >-
+  Two future-token MTP using one recursively shared Megatron MTP layer: it
+  predicts the second and third next tokens with shared head weights.  Its
+  micro-batch is reduced to eight to fit the additional recurrent activations
+  while preserving the 256-sequence global batch through accumulation.
+overrides:
+  MTP_NUM_LAYERS: 2
+  MTP_USE_REPEATED_LAYER: true
+  INPUT_MASK_RATIO: 0.0
+  MBS: 8

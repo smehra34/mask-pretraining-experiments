@@ -176,6 +176,13 @@ def _validate_experiment_controls(env: dict[str, str]) -> None:
         raise ConfigError("MTP_NUM_LAYERS must be an integer") from exc
     if mtp_num_layers < 0:
         raise ConfigError("MTP_NUM_LAYERS must be non-negative")
+    mtp_use_repeated_layer = env.get("MTP_USE_REPEATED_LAYER", "false")
+    if mtp_use_repeated_layer not in {"true", "false"}:
+        raise ConfigError("MTP_USE_REPEATED_LAYER must be 'true' or 'false'")
+    if mtp_use_repeated_layer == "true" and mtp_num_layers < 2:
+        raise ConfigError(
+            "MTP_USE_REPEATED_LAYER requires MTP_NUM_LAYERS of at least 2"
+        )
     try:
         mtp_loss_weight = float(env.get("MTP_LOSS_SCALING_FACTOR", "0.1"))
     except ValueError as exc:

@@ -66,6 +66,9 @@ environment:
   MUON_NUM_NS_STEPS: 5
   MUON_SCALAR_OPTIMIZER: adam
   MTP_NUM_LAYERS: 0
+  # Replays the one MTP layer at every prediction depth when enabled. This is
+  # false for the standard one-future-token MTP condition.
+  MTP_USE_REPEATED_LAYER: false
   # TODO(mtp-calibration): 0.1 is Megatron's upstream default; freeze or tune
   # this auxiliary-loss weight before confirmatory runs.
   MTP_LOSS_SCALING_FACTOR: 0.1

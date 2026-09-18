@@ -35,6 +35,10 @@ def _submission_overrides(command: list[str], args: argparse.Namespace) -> list[
     actual = list(command)
     if getattr(args, "without_reservation", False):
         actual = [item for item in actual if not item.startswith("--reservation=")]
+    partition = getattr(args, "sbatch_partition", None)
+    if partition:
+        actual = [item for item in actual if not item.startswith("--partition=")]
+        actual.insert(1, f"--partition={partition}")
     walltime = getattr(args, "sbatch_time", None)
     if walltime:
         actual = [item for item in actual if not item.startswith("--time=")]
@@ -344,6 +348,9 @@ def build_parser() -> argparse.ArgumentParser:
         if name == "submit-main":
             command.add_argument("--sbatch-time", help="Override Slurm walltime (HH:MM:SS)")
             command.add_argument("--nodes", type=int, help="Override the requested Slurm nodes")
+            command.add_argument(
+                "--sbatch-partition", help="Override the Slurm partition for this submission"
+            )
         command.set_defaults(handler=handler)
 
     for name, help_text, handler in (

@@ -64,6 +64,7 @@ NUM_ATTENTION_HEADS=${NUM_ATTENTION_HEADS:-32}
 NUM_QUERY_GROUPS=${NUM_QUERY_GROUPS:-8}
 INIT_METHOD_STD=${INIT_METHOD_STD:-0.013975424859373685}
 MTP_NUM_LAYERS=${MTP_NUM_LAYERS:-0}
+MTP_USE_REPEATED_LAYER=${MTP_USE_REPEATED_LAYER:-false}
 MTP_LOSS_SCALING_FACTOR=${MTP_LOSS_SCALING_FACTOR:-0.1}
 
 AUTO_JOB_REQUEUE=${AUTO_JOB_REQUEUE:-false}
@@ -225,7 +226,7 @@ mkdir -p "$SAVE_DIR" "$DEBUG_DIR" "$WANDB_DIR"
 echo "Mode: $RUN_MODE"
 echo "Training target: $TRAIN_SAMPLES samples ($((TRAIN_SAMPLES * SEQ_LEN)) tokens)"
 echo "Input masking: ratio=$INPUT_MASK_RATIO strategy=$INPUT_MASK_STRATEGY span_length=$INPUT_MASK_SPAN_LENGTH token=$INPUT_MASK_TOKEN"
-echo "MTP: layers=$MTP_NUM_LAYERS loss_scaling_factor=$MTP_LOSS_SCALING_FACTOR"
+echo "MTP: layers=$MTP_NUM_LAYERS repeated_layer=$MTP_USE_REPEATED_LAYER loss_scaling_factor=$MTP_LOSS_SCALING_FACTOR"
 echo "Checkpoint interval: $SAVE_INTERVAL iterations ($ACTUAL_SAVE_TOKENS tokens; requested $SAVE_EVERY_TOKENS)"
 if [[ $ROLLING_CHECKPOINTS == true ]]; then
   echo "Rolling recovery interval: $ROLLING_SAVE_INTERVAL iterations ($ACTUAL_ROLLING_SAVE_TOKENS tokens; requested $ROLLING_SAVE_EVERY_TOKENS)"
@@ -344,11 +345,18 @@ TRAINING_ARGS=(
   echo "MTP_NUM_LAYERS must be a non-negative integer" >&2
   exit 2
 }
+[[ $MTP_USE_REPEATED_LAYER == true || $MTP_USE_REPEATED_LAYER == false ]] || {
+  echo "MTP_USE_REPEATED_LAYER must be 'true' or 'false'" >&2
+  exit 2
+}
 if ((MTP_NUM_LAYERS > 0)); then
   TRAINING_ARGS+=(
     --mtp-num-layers "$MTP_NUM_LAYERS"
     --mtp-loss-scaling-factor "$MTP_LOSS_SCALING_FACTOR"
   )
+  if [[ $MTP_USE_REPEATED_LAYER == true ]]; then
+    TRAINING_ARGS+=(--mtp-use-repeated-layer)
+  fi
 fi
 
 if [[ $OPTIMIZER == muon ]]; then

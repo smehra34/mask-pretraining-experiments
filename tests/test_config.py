@@ -95,7 +95,7 @@ class ConfigTests(unittest.TestCase):
                 ROOT / f"collections/{size}_objective_screen.yaml"
             )
             self.assertEqual(name, f"{size}-objective-screen")
-            expected_count = 5
+            expected_count = 6
             self.assertEqual(len(experiments), expected_count)
             self.assertEqual(
                 len({item.experiment_name for item in experiments}), expected_count
@@ -115,8 +115,27 @@ class ConfigTests(unittest.TestCase):
                 ("0", "0.15", "random", "1"),
                 ("0", "0.15", "span", "5"),
             }
+            expected_objectives.add(("2", "0.0", "random", "1"))
             expected_objectives.add(("0", "0.15", "variable_span", "5"))
             self.assertEqual(objectives, expected_objectives)
+
+    def test_shared_mtp_predicts_two_future_tokens_with_one_layer(self) -> None:
+        for size in ("300m", "1b"):
+            standard = load_experiment(ROOT / f"studies/{size}_objective_screen/mtp-2token.yaml")
+            shared = load_experiment(ROOT / f"studies/{size}_objective_screen/mtp-shared-3token.yaml")
+            self.assertEqual(standard.main.environment["MTP_NUM_LAYERS"], "1")
+            self.assertEqual(standard.main.environment["MTP_USE_REPEATED_LAYER"], "false")
+            self.assertEqual(shared.main.environment["MTP_NUM_LAYERS"], "2")
+            self.assertEqual(shared.main.environment["MTP_USE_REPEATED_LAYER"], "true")
+            self.assertEqual(shared.main.environment["INPUT_MASK_RATIO"], "0.0")
+            self.assertEqual(shared.main.environment["MTP_LOSS_SCALING_FACTOR"], "0.1")
+            self.assertEqual(shared.main.environment["GBS"], standard.main.environment["GBS"])
+            self.assertEqual(shared.main.environment["SEQ_LEN"], standard.main.environment["SEQ_LEN"])
+        self.assertEqual(
+            load_experiment(ROOT / "studies/300m_objective_screen/mtp-shared-3token.yaml")
+            .main.environment["MBS"],
+            "8",
+        )
 
     def test_second_1b_objective_screen_is_seed_67_ntp_mtp_and_variable_span(self) -> None:
         name, experiments = load_collection(

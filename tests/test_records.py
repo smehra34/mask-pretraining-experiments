@@ -22,7 +22,12 @@ class RecordTests(unittest.TestCase):
         args = type(
             "Args",
             (),
-            {"without_reservation": True, "sbatch_time": "01:15:00", "nodes": 4},
+            {
+                "without_reservation": True,
+                "sbatch_time": "01:15:00",
+                "sbatch_partition": "preemptable",
+                "nodes": 4,
+            },
         )()
         command = [
             "sbatch",
@@ -37,6 +42,7 @@ class RecordTests(unittest.TestCase):
                 "sbatch",
                 "--nodes=4",
                 "--time=01:15:00",
+                "--partition=preemptable",
                 "--account=infra01",
                 "launcher.sh",
             ],
