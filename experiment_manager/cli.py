@@ -375,7 +375,11 @@ def build_parser() -> argparse.ArgumentParser:
     cooldowns.add_argument("--dependency", help="Submit with afterok dependency on this job ID")
     cooldowns.add_argument("--skip-checkpoint-check", action="store_true")
     cooldowns.add_argument("--without-reservation", action="store_true")
+    cooldowns.add_argument("--requeue", action="store_true")
     cooldowns.add_argument("--sbatch-time", help="Override frozen Slurm walltime (HH:MM:SS)")
+    cooldowns.add_argument(
+        "--sbatch-partition", help="Override the Slurm partition for this submission"
+    )
     cooldowns.set_defaults(handler=cmd_submit_cooldowns)
 
     resume = subparsers.add_parser("resume", help="Resubmit one exact recorded stage")
