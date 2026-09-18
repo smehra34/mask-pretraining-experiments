@@ -1,0 +1,10 @@
+schema_version: 1
+recipe: ../../recipes/3b_llama.yaml
+study: 3b-objective-screen
+name: meap-random-015
+description: NTP with 15 percent independently random input-token masking at approximately 3.07B parameters.
+overrides:
+  MTP_NUM_LAYERS: 0
+  INPUT_MASK_RATIO: 0.15
+  INPUT_MASK_STRATEGY: random
+  INPUT_MASK_SPAN_LENGTH: 1

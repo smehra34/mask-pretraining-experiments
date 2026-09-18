@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import os
 import tempfile
 import unittest
@@ -207,6 +208,141 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(small.cooldowns[0].environment["COOLDOWN_TOKENS"], "1200000000")
         self.assertEqual(large.main.environment["TRAIN_TOKENS"], "36000000000")
         self.assertEqual(large.cooldowns[0].environment["COOLDOWN_TOKENS"], "4000000000")
+
+    def test_3b_objective_screen_architecture_schedule_and_objectives(self) -> None:
+        name, experiments = load_collection(ROOT / "collections/3b_objective_screen.yaml")
+        self.assertEqual(name, "3b-objective-screen")
+        self.assertEqual(
+            [item.condition_name for item in experiments],
+            [
+                "ntp",
+                "mtp-2token",
+                "meap-random-015",
+                "meap-variable-span-015-max5",
+            ],
+        )
+
+        ntp, mtp, random_masking, variable_masking = experiments
+        identity_keys = {"CONDITION_NAME", "EXP_NAME", "CHECKPOINT_ROOT"}
+        masking_keys = {"INPUT_MASK_RATIO", "INPUT_MASK_STRATEGY", "INPUT_MASK_SPAN_LENGTH"}
+        random_masking_differences = {
+            key
+            for key in ntp.main.environment
+            if ntp.main.environment[key] != random_masking.main.environment[key]
+        }
+        variable_masking_differences = {
+            key
+            for key in ntp.main.environment
+            if ntp.main.environment[key] != variable_masking.main.environment[key]
+        }
+        mtp_differences = {
+            key
+            for key in ntp.main.environment
+            if ntp.main.environment[key] != mtp.main.environment[key]
+        }
+        self.assertEqual(random_masking_differences, identity_keys | {"INPUT_MASK_RATIO"})
+        self.assertEqual(variable_masking_differences, identity_keys | masking_keys)
+        self.assertEqual(mtp_differences, identity_keys | {"MTP_NUM_LAYERS"})
+
+        env = ntp.main.environment
+        layers = int(env["NUM_LAYERS"])
+        hidden = int(env["HIDDEN_SIZE"])
+        ffn = int(env["FFN_HIDDEN_SIZE"])
+        heads = int(env["NUM_ATTENTION_HEADS"])
+        groups = int(env["NUM_QUERY_GROUPS"])
+        self.assertEqual(hidden // heads, 64)
+        self.assertEqual(heads // groups, 4)
+        self.assertEqual(hidden % 256, 0)
+        self.assertEqual(ffn % 256, 0)
+        self.assertEqual(heads % groups, 0)
+
+        # Megatron's dense, bias-free RMSNorm/SwiGLU count with tied embeddings.
+        attention = hidden * hidden + (heads + 2 * groups) * 64 * hidden
+        swiglu_mlp = 3 * hidden * ffn
+        parameter_count = (
+            layers * (attention + swiglu_mlp + 2 * hidden) + hidden + 32768 * hidden
+        )
+        self.assertEqual(parameter_count, 3_073_563_648)
+        self.assertGreater(parameter_count, 2_700_000_000)
+        self.assertLess(parameter_count, 3_300_000_000)
+        mtp_parameter_count = attention + swiglu_mlp + 2 * hidden
+        self.assertEqual(mtp_parameter_count, 99_096_576)
+        self.assertEqual(parameter_count + mtp_parameter_count, 3_172_660_224)
+
+        tokens_per_iteration = 256 * 4096
+        main_iterations = math.ceil(108_000_000_000 / tokens_per_iteration)
+        cooldown_iterations = math.ceil(12_000_000_000 / tokens_per_iteration)
+        self.assertEqual(env["GBS"], "256")
+        self.assertEqual(env["SEQ_LEN"], "4096")
+        self.assertEqual(env["MBS"], "2")
+        self.assertIn("--nodes=8", ntp.sbatch_args)
+        self.assertEqual(256 // (8 * 4 * 2), 4)
+        self.assertEqual(env["TRAIN_TOKENS"], "108000000000")
+        self.assertEqual(
+            ntp.cooldowns[0].environment["COOLDOWN_TOKENS"], "12000000000"
+        )
+        self.assertEqual(
+            int(env["TRAIN_TOKENS"])
+            + int(ntp.cooldowns[0].environment["COOLDOWN_TOKENS"]),
+            120_000_000_000,
+        )
+        self.assertEqual(ntp.resolved["derived"]["main_iterations"], main_iterations)
+        self.assertEqual(ntp.cooldowns[0].source_iteration, main_iterations)
+        self.assertEqual(main_iterations, 102997)
+        self.assertEqual(cooldown_iterations, 11445)
+
+        persistent = ntp.resolved["derived"]["persistent_save_interval"]
+        rolling = (
+            int(env["ROLLING_SAVE_EVERY_TOKENS"]) + tokens_per_iteration // 2
+        ) // tokens_per_iteration
+        self.assertEqual(persistent, 11444)
+        self.assertEqual(rolling, 1431)
+        self.assertEqual(persistent * tokens_per_iteration, 11_999_903_744)
+        self.assertEqual(rolling * tokens_per_iteration, 1_500_512_256)
+
+        optimizer_keys = (
+            "PEAK_LR",
+            "MIN_LR",
+            "WARMUP_STEPS",
+            "OPTIMIZER",
+            "MUON_MOMENTUM",
+            "MUON_NESTEROV",
+            "MUON_SCALE_MODE",
+            "MUON_EXTRA_SCALE_FACTOR",
+            "MUON_NUM_NS_STEPS",
+            "MUON_SCALAR_OPTIMIZER",
+            "WEIGHT_DECAY",
+        )
+        production = load_experiment(ROOT / "studies/1b_objective_screen/ntp.yaml")
+        for experiment in experiments:
+            for key in optimizer_keys:
+                self.assertEqual(
+                    experiment.main.environment[key], production.main.environment[key]
+                )
+        self.assertEqual(ntp.main.environment["MTP_NUM_LAYERS"], "0")
+        self.assertEqual(mtp.main.environment["MTP_NUM_LAYERS"], "1")
+        self.assertEqual(mtp.main.environment["INPUT_MASK_RATIO"], "0.0")
+        self.assertEqual(random_masking.main.environment["MTP_NUM_LAYERS"], "0")
+        self.assertEqual(variable_masking.main.environment["MTP_NUM_LAYERS"], "0")
+        launcher = ntp.submission_script.read_text()
+        for argument in (
+            "--clip-grad 1.0",
+            "--adam-beta1 0.9",
+            "--adam-beta2 0.95",
+            "--adam-eps 1e-08",
+            "--tensor-model-parallel-size 1",
+            "--pipeline-model-parallel-size 1",
+        ):
+            self.assertIn(argument, launcher)
+        self.assertEqual(ntp.main.environment["INPUT_MASK_RATIO"], "0.0")
+        self.assertEqual(random_masking.main.environment["INPUT_MASK_RATIO"], "0.15")
+        self.assertEqual(random_masking.main.environment["INPUT_MASK_STRATEGY"], "random")
+        self.assertEqual(random_masking.main.environment["INPUT_MASK_SPAN_LENGTH"], "1")
+        self.assertEqual(variable_masking.main.environment["INPUT_MASK_RATIO"], "0.15")
+        self.assertEqual(
+            variable_masking.main.environment["INPUT_MASK_STRATEGY"], "variable_span"
+        )
+        self.assertEqual(variable_masking.main.environment["INPUT_MASK_SPAN_LENGTH"], "5")
 
     def test_muon_sweep_is_short_unmasked_and_varies_optimizer_settings(self) -> None:
         name, experiments = load_collection(ROOT / "collections/1b_muon_sweep.yaml")

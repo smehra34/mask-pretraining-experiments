@@ -1,0 +1,7 @@
+schema_version: 1
+name: 3b-objective-screen
+conditions:
+  - ../studies/3b_objective_screen/ntp.yaml
+  - ../studies/3b_objective_screen/mtp-2token.yaml
+  - ../studies/3b_objective_screen/meap-random-015.yaml
+  - ../studies/3b_objective_screen/meap-variable-span-015-max5.yaml

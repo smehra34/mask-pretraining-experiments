@@ -22,6 +22,107 @@ attention heads, 4:1 GQA, tied embeddings, and the same SwiGLU ratio. Their
 12B- and 40B-token budgets each end with a 10% WSD cooldown. Muon optimizer
 values marked TODO remain provisional until the queued calibration completes.
 
+## 3B objective screen
+
+`recipes/3b_llama.yaml` adds a 3,073,563,648-parameter dense member for a direct
+scaling comparison. It has 30 layers, hidden size 3072, SwiGLU FFN size 8192,
+48 64-dimensional query heads, and 12 KV groups. The count assumes a bias-free
+Llama decoder with two RMSNorm weights per layer, one final RMSNorm, a padded
+32,768-token vocabulary, tied input/output embeddings, and no MTP block. All
+3,073,563,648 base parameters are trainable in every condition; input masking
+adds no parameters. The MTP condition enables one sequential predictor layer
+for two-token prediction using the recipe's shared MTP loss scale of 0.1.
+Megatron's theoretical counter assigns that dense MTP block 99,096,576
+objective-specific parameters, for 3,172,660,224 total trainable parameters in
+the MTP condition.
+
+The width is a hardware-aligned 1.5x increase over 1.1B. Thirty layers place
+the model close to 3B without forcing an exact decimal target, while keeping
+the depth moderate and all hidden, FFN, head, GQA, and tensor-parallel
+divisibility constraints clean. Initialization follows the existing family
+rule `sqrt(0.4 / hidden_size)`, giving `0.01141088661469096` rather than copying
+the 1.1B constant.
+
+All four conditions train for a nominal 120B tokens: a 108B stable WSD trunk and a
+12B `minus_sqrt` cooldown loaded from the final trunk checkpoint without a new
+warmup. At 256 sequences x 4096 tokens, an update contains 1,048,576 tokens.
+The main stage therefore ends at iteration 102,997 and the cooldown runs for
+11,445 more updates, ending at absolute iteration 114,442. Decimal-billion
+budgets cannot be divided exactly by this update size: the launcher schedules
+108,000,182,272 main tokens and 12,000,952,320 cooldown tokens
+(120,001,134,592 total) while retaining the exact declared 108B/12B/120B
+scientific budgets.
+
+Persistent saves occur every 11,444 updates (11,999,903,744 tokens), producing
+useful landmarks near 24B, 36B, 72B, and 108B; the launcher also saves the exact
+final-main and final-cooldown endpoints. The single regular-save interval
+cannot additionally make 3B permanent without retaining many checkpoints.
+Rolling recovery saves occur every 1,431 updates (1,500,512,256 tokens); the
+second rolling save at iteration 2,862 (3,001,024,512 tokens) is the early
+learning-rate stability gate and is not a permanent scientific checkpoint.
+
+The production 1.1B optimizer is transferred unchanged: Muon at peak LR
+`0.0008`, minimum LR `0.00008`, momentum 0.95, Nesterov, spectral scaling,
+extra scale 0.2, five Newton-Schulz steps, Adam for scalar parameters, weight
+decay 0.05, 1.0 gradient clipping, Adam betas 0.9/0.95, epsilon 1e-8, and 1,000
+warmup updates. This LR is transferred, not tuned or claimed optimal for 3B;
+the ~3B gate must be checked for stability before committing the full budget.
+NTP has masking disabled. MTP adds one sequential Megatron MTP layer that
+predicts one additional future token, also without input masking. One masking
+condition independently masks 15% of input tokens without explicit spans. The
+other masks 15% with the existing truncated-geometric (`p=0.5`) variable-span
+implementation and maximum span length five. Both disable MTP. Architecture,
+optimizer, data, schedule, and execution settings remain invariant across all
+four conditions.
+
+Training uses eight four-GPU nodes, TP=PP=CP=1, data parallel size 32,
+micro-batch size 2, and four gradient-accumulation microbatches per update.
+The repository's Megatron estimator gives roughly 18.25 GiB per rank for model
+and distributed-optimizer state and roughly 22 GiB for unrecomputed
+activations, before runtime/workspace overhead. This makes the topology a
+conservative fit for the available accelerator memory while preserving the
+1.1B global batch and sequence length. Each allocation requests 72 CPUs and
+460 GB host memory per node for up to 12 hours; rolling resume is expected for
+the long trunk. Scaling the measured 1.1B 5.88-second update by parameter count
+and twice as many GPUs suggests roughly 8 seconds per update before larger-run
+communication effects. A conservative 9–12 seconds per update puts the main
+trunk at about 258–343 elapsed hours (roughly 22–29 full allocations) and the
+cooldown at about 29–38 hours. These are planning estimates, not measured 3B
+throughput.
+
+The local dataset manifest records 149,999,999,419 uint16 tokens. With the
+unchanged `995,5,0` split, about 149.25B tokens are eligible for training, so a
+120B run consumes roughly 0.80 corpus passes (before sequence-boundary and
+sampling details). Dataset paths, tokenizer, cache, blend ordering, and seed
+3407 are identical to the 1.1B screen. Existing zero-shot core, five-shot core,
+GSM8K, and Paloma evaluation definitions work with the resulting standard
+Megatron distributed checkpoints; this screen adds no evaluation tasks.
+
+Settings changed from the 1.1B recipe are limited to model scale and execution
+capacity: layers 24 -> 30, hidden size 2048 -> 3072, FFN 5632 -> 8192, heads
+32 -> 48, KV groups 8 -> 12, initialization std 0.013975424859373685 ->
+0.01141088661469096 (family scaling), micro-batch 8 -> 2 and nodes 4 -> 8
+(memory/capacity), main tokens 36B -> 108B and cooldown tokens 4B -> 12B
+(requested scaling budget), cooldown source 34,333 -> 102,997 (new final-main
+update), persistent saves 10B -> 12B (scientific landmarks/storage), and
+rolling saves 1B -> 1.5B (recovery cost and the ~3B gate). All other recipe
+settings are mirrored.
+
+Planning is read-only:
+
+```bash
+cd /users/smehra/developer/mask-experiment-manager
+export SCRATCH=/iopsstor/scratch/cscs/smehra
+/usr/bin/python3.11 mask_exp.py plan-collection collections/3b_objective_screen.yaml
+```
+
+After reviewing the plan and early-gate procedure, submit only the NTP main
+stage with:
+
+```bash
+/usr/bin/python3.11 mask_exp.py submit-main studies/3b_objective_screen/ntp.yaml
+```
+
 ## Basic workflow
 
 Use Python 3.11 on the current system and make sure `SCRATCH` is defined. It is

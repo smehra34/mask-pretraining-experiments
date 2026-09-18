@@ -1,0 +1,12 @@
+schema_version: 1
+recipe: ../../recipes/3b_llama.yaml
+study: 3b-objective-screen
+name: meap-variable-span-015-max5
+description: >-
+  NTP with 15 percent input-token masking using truncated-geometric span lengths
+  1–5 with p=0.5 at approximately 3.07B parameters.
+overrides:
+  MTP_NUM_LAYERS: 0
+  INPUT_MASK_RATIO: 0.15
+  INPUT_MASK_STRATEGY: variable_span
+  INPUT_MASK_SPAN_LENGTH: 5

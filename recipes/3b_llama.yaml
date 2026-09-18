@@ -1,0 +1,93 @@
+schema_version: 1
+name: 3b-llama
+
+execution:
+  submission_script: ../submission/train_1b_llama.sh
+  project_name: mask_pretraining
+  experiment_name: "{study}__{condition}"
+  checkpoint_root: "/capstor/scratch/cscs/smehra/megatron-runs/checkpoints/{project}/{experiment}"
+  artifacts_root: ../runs
+  sbatch_args:
+    - --account=infra01
+    # The stable trunk spans multiple allocations; rolling checkpoints make
+    # repeated resume safe within the site wall-time limit.
+    - --time=12:00:00
+    - --nodes=8
+    - --ntasks-per-node=1
+    - --gpus-per-node=4
+    - --cpus-per-task=72
+    - --mem=460000
+    - --no-requeue
+
+# Invariants shared by the NTP, masking, and MTP conditions.
+environment:
+  DATASETS: /iopsstor/scratch/cscs/smehra/tokenized_datasets/dclm-edu__mistral-7b-v0.3
+  TOKENIZER_MODEL: mistralai/Mistral-7B-v0.3
+  MEGATRON_LM_DIR: /users/smehra/developer/Megatron-LM
+  DATASET_CACHE_DIR: "${SCRATCH}/datasets/cache-dclm-edu-mistral-v03"
+  CHECKPOINT_STORAGE_ROOT: /capstor/scratch/cscs/smehra/megatron-runs
+  WANDB_PROJECT: mask_pretraining
+  # Eight four-GPU nodes give DP=32 at TP=PP=CP=1. MBS=2 therefore uses four
+  # gradient-accumulation microbatches while preserving GBS=256.
+  MBS: 2
+  GBS: 256
+  SEQ_LEN: 4096
+  # 3,073,563,648 parameters with the tied, padded 32,768-token vocabulary.
+  # Width 3072 keeps 64-dimensional heads and the 4:1 GQA ratio; 30 layers
+  # lands naturally near 3B while the 8192-wide SwiGLU FFN remains aligned.
+  NUM_LAYERS: 30
+  HIDDEN_SIZE: 3072
+  FFN_HIDDEN_SIZE: 8192
+  NUM_ATTENTION_HEADS: 48
+  NUM_QUERY_GROUPS: 12
+  # Family rule: sqrt(0.4 / hidden_size), matching the 300M and 1.1B recipes.
+  INIT_METHOD_STD: 0.01141088661469096
+  ROTARY_BASE: 500000
+  WARMUP_STEPS: 1000
+  # Transferred unchanged from 1.1B production; not tuned for this model size.
+  PEAK_LR: 0.0008
+  MIN_LR: 0.00008
+  SEED: 3407
+  LOG_INTERVAL: 1
+  EVAL_INTERVAL: 100
+  EVAL_ITERS: 10
+  DISTRIBUTED_TIMEOUT_MINUTES: 60
+  ATTENTION_DROPOUT: 0.0
+  HIDDEN_DROPOUT: 0.0
+  WEIGHT_DECAY: 0.05
+  OPTIMIZER: muon
+  MUON_MOMENTUM: 0.95
+  MUON_NESTEROV: true
+  MUON_SCALE_MODE: spectral
+  MUON_EXTRA_SCALE_FACTOR: 0.2
+  MUON_NUM_NS_STEPS: 5
+  MUON_SCALAR_OPTIMIZER: adam
+  MTP_NUM_LAYERS: 0
+  MTP_LOSS_SCALING_FACTOR: 0.1
+  # One persistent save every ~12B tokens yields ~24B, ~36B, ~72B, and
+  # ~108B landmarks without excessive storage. Rolling ~1.5B saves are only
+  # for recovery; their second occurrence supplies the ~3B LR stability gate.
+  SAVE_EVERY_TOKENS: 12000000000
+  ROLLING_CHECKPOINTS: true
+  ROLLING_SAVE_EVERY_TOKENS: 1500000000
+  COOLDOWN_STYLE: minus_sqrt
+  INPUT_MASK_RATIO: 0.0
+  INPUT_MASK_STRATEGY: random
+  INPUT_MASK_SPAN_LENGTH: 1
+  INPUT_MASK_TOKEN: "[control_768]"
+  INPUT_MASK_DEBUG: false
+  INPUT_MASK_DEBUG_TOKENS: 128
+  LOG_NCCL: false
+  NSYS_PROFILER: false
+  MOCK_DATA: false
+  BACKUP_CODEBASE: false
+  RUN_CAPSTOR_DIAGNOSTICS: false
+
+stages:
+  main:
+    train_tokens: 108000000000
+  cooldown:
+    branches:
+      # Exact final-main update: ceil(108B / (256 * 4096)).
+      - source_iteration: 102997
+        tokens: 12000000000
