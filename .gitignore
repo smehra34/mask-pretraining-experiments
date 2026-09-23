@@ -5,3 +5,5 @@ __pycache__/
 runs/
 wandb/
 *slurm*
+logs/
+evaluations/workloads/speculative-natural-v1/

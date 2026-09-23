@@ -1,0 +1,4 @@
+{"id":"general-001","domain":"general","text":"The old observatory stood above the village, and every winter"}
+{"id":"general-002","domain":"general","text":"Photosynthesis converts light energy into chemical energy by"}
+{"id":"code-001","domain":"code","text":"def merge_sorted(left, right):\n    result = []\n    while left and right:"}
+{"id":"math-001","domain":"math","text":"A train travels 120 kilometers in two hours. At the same constant speed,"}

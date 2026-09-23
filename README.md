@@ -342,6 +342,58 @@ published Paloma corpus is already stratified to approximately 100k tokens per
 domain; current experiments evaluate it without decontamination and therefore
 should be interpreted as within-study diagnostics.
 
+### Speculative natural-continuation workload
+
+`evaluations/prepare_speculative_natural_v1.sh` deterministically builds a 1,000-prompt workload: 200
+sequences from Megatron's DCLM-Edu validation partition and 200 token windows from each of four Paloma
+groups (Wikipedia, academic prose, PTB news, and selected general-interest subreddits). Each prompt has
+256 tokens and reserves at least 128 further source tokens. Manifests freeze inputs, extraction parameters,
+source IDs/token offsets, and SHA-256 fingerprints.
+
+Run the preparation script inside the standard `test-env`, where NumPy and the recorded tokenizer runtime
+are available:
+
+```bash
+cd /users/smehra/developer/mask-experiment-manager
+srun --environment=test-env bash evaluations/prepare_speculative_natural_v1.sh
+```
+
+The DCLM extractor exactly reproduces training's `--split 995,5,0`: for every sorted indexed shard it uses
+sequence indices from `round(0.995 * sequence_count)` onward. These sequences received no training-gradient
+updates, although they were used for periodic validation, so reports label them `dclm_edu_validation` rather
+than an untouched test set. Paloma samples use deterministic non-overlapping token windows because several
+Paloma domain files store one long concatenated text record.
+
+After preparation, plan the suite without writing or submitting:
+
+```bash
+/usr/bin/python3.11 mask_exp.py plan-speculative RUN_DIRECTORY \
+  --stage main --step latest --suite speculative-natural-v1
+```
+
+The suite keeps overall and per-domain aggregates. Its six-hour request reflects the deliberately sequential,
+correctness-first verifier over 1,000 prompts and is not a production-speed benchmark. Results are appended
+durably after every completed prompt/profile unit, while aggregate JSON and Markdown reports are refreshed
+atomically at regular intervals. Render the immutable record once, then use the same idempotent submission
+command both for its first run and for any manual restart:
+
+```bash
+/usr/bin/python3.11 mask_exp.py render-speculative RUN_DIRECTORY \
+  --stage main --step latest --suite speculative-natural-v1
+
+/usr/bin/python3.11 mask_exp.py submit-speculative-record ANALYSIS_RECORD \
+  --sbatch-time 02:00:00 --sbatch-partition preemptable
+```
+
+The rendered script requests Slurm requeue, so a preempted allocation can restart the same job automatically.
+Re-running the exact `submit-speculative-record` command is also safe after a failure or wall-time expiry:
+completed result keys are skipped and are not double-counted. `resume-speculative` remains an alias for older
+commands.
+
+The per-record `progress_speculative_*.json` sidecar reports completed and expected prompt units and records.
+The append-only `samples_speculative_*.jsonl` file is the source of truth used to rebuild partial or final
+reports after interruption.
+
 ## Defining experiments
 
 The 300M and original 1.1B screens contain NTP, native Megatron two-token MTP

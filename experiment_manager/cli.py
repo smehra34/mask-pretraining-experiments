@@ -25,9 +25,17 @@ from experiment_manager.records import (
     shell_command,
 )
 from experiment_manager.slurm import query, submit, with_dependency
+from experiment_manager.speculative import (
+    append_speculative_submission,
+    create_speculative_record,
+    load_speculative_record,
+    render_script as render_speculative_script,
+    resolve_speculative,
+)
 
 
 DEFAULT_EVALUATION_CONFIG = Path(__file__).resolve().parents[1] / "evaluations/suites.yaml"
+DEFAULT_SPECULATIVE_CONFIG = Path(__file__).resolve().parents[1] / "evaluations/speculative.yaml"
 
 
 def _submission_overrides(command: list[str], args: argparse.Namespace) -> list[str]:
@@ -300,6 +308,85 @@ def cmd_submit_eval(args: argparse.Namespace) -> None:
         print(f"Evaluation record: {record_dir}")
 
 
+def _resolved_speculative(args: argparse.Namespace, *, require_checkpoint: bool):
+    return resolve_speculative(
+        args.run,
+        stage_key=args.stage,
+        checkpoint_step=args.step,
+        suite_name=args.suite,
+        config_path=args.speculative_config,
+        require_checkpoint=require_checkpoint and not args.skip_checkpoint_check,
+    )
+
+
+def cmd_plan_speculative(args: argparse.Namespace) -> None:
+    analysis = _resolved_speculative(args, require_checkpoint=False)
+    print(f"Speculative suite: {analysis.suite_name}")
+    print(f"Checkpoint:        {analysis.checkpoint_dir}/iter_{analysis.checkpoint_step:07d}")
+    print(f"Objective:         {analysis.config['training']['objective']}")
+    print(f"Config hash:       {analysis.config_hash}")
+    print("\nRendered non-submitting Slurm script:\n")
+    print(render_speculative_script(analysis, "ANALYSIS_RECORD/resolved.yaml"))
+
+
+def cmd_render_speculative(args: argparse.Namespace) -> None:
+    record = create_speculative_record(
+        _resolved_speculative(args, require_checkpoint=True)
+    )
+    print(f"Rendered immutable speculative-analysis record: {record}")
+
+
+def cmd_submit_speculative(args: argparse.Namespace) -> None:
+    record = create_speculative_record(
+        _resolved_speculative(args, require_checkpoint=True)
+    )
+    job_id = submit(["sbatch", str(record / "submit.sh")])
+    append_speculative_submission(record, job_id)
+    print(f"Submitted speculative analysis as job {job_id}")
+    print(f"Analysis record: {record}")
+
+
+def cmd_submit_speculative_record(args: argparse.Namespace) -> None:
+    """Submit an existing record, starting at zero or resuming durable results."""
+    record, frozen = load_speculative_record(args.record)
+    progress_path = Path(
+        frozen["output"].get(
+            "progress",
+            Path(frozen["output"]["samples"]).with_name(
+                f"{Path(frozen['output']['samples']).stem}.progress.json"
+            ),
+        )
+    )
+    if progress_path.is_file():
+        progress = yaml.safe_load(progress_path.read_text())
+        if progress.get("complete"):
+            raise ValueError(f"speculative analysis is already complete: {record}")
+    # Command-line --requeue also covers records rendered before the batch
+    # template gained its explicit #SBATCH directive.
+    command = _submission_overrides(
+        ["sbatch", "--requeue", str(record / "submit.sh")], args
+    )
+    job_id = submit(command)
+    action = "resume" if progress_path.is_file() else "submit-record"
+    append_speculative_submission(
+        record,
+        job_id,
+        command=command,
+        action=action,
+    )
+    print(f"Submitted speculative analysis record as job {job_id}")
+    print(f"Analysis record: {record}")
+
+
+def _add_speculative_arguments(command: argparse.ArgumentParser) -> None:
+    command.add_argument("run", help="Path to an immutable training run-record directory")
+    command.add_argument("--stage", default="main")
+    command.add_argument("--step", default=None, type=_evaluation_step)
+    command.add_argument("--suite", default="speculative-smoke")
+    command.add_argument("--speculative-config", default=str(DEFAULT_SPECULATIVE_CONFIG))
+    command.add_argument("--skip-checkpoint-check", action="store_true")
+
+
 def _add_evaluation_arguments(command: argparse.ArgumentParser) -> None:
     command.add_argument("run", help="Path to an immutable training run-record directory")
     command.add_argument("--stage", default="main", help="Training stage key (default: main)")
@@ -416,6 +503,47 @@ def build_parser() -> argparse.ArgumentParser:
     )
     _add_evaluation_arguments(submit_eval)
     submit_eval.set_defaults(handler=cmd_submit_eval)
+
+    for name, help_text, handler in (
+        (
+            "plan-speculative",
+            "Validate and print a speculative job without writing",
+            cmd_plan_speculative,
+        ),
+        (
+            "render-speculative",
+            "Create an immutable speculative-analysis record",
+            cmd_render_speculative,
+        ),
+        (
+            "submit-speculative",
+            "Create and submit a speculative-analysis record",
+            cmd_submit_speculative,
+        ),
+    ):
+        command = subparsers.add_parser(name, help=help_text)
+        _add_speculative_arguments(command)
+        command.set_defaults(handler=handler)
+
+    for name, help_text in (
+        (
+            "submit-speculative-record",
+            "Submit an existing record, automatically resuming durable samples",
+        ),
+        (
+            "resume-speculative",
+            "Compatibility alias for submit-speculative-record",
+        ),
+    ):
+        submit_record = subparsers.add_parser(name, help=help_text)
+        submit_record.add_argument("record", help="Immutable speculative-analysis record")
+        submit_record.add_argument(
+            "--sbatch-time", help="Override walltime for this submission (HH:MM:SS)"
+        )
+        submit_record.add_argument(
+            "--sbatch-partition", help="Override the Slurm partition for this submission"
+        )
+        submit_record.set_defaults(handler=cmd_submit_speculative_record)
     return parser
 
 

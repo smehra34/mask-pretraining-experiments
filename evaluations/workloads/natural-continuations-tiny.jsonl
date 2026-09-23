@@ -1,0 +1,4 @@
+{"id":"general-001","domain":"general","text":"The old observatory stood above the village, and every winter"}
+{"id":"code-001","domain":"code","text":"def fibonacci(n):\n    if n < 2:\n        return n\n    return"}
+{"id":"science-001","domain":"science","text":"Water changes from a liquid to a gas when"}
+{"id":"narrative-001","domain":"general","text":"Mara opened the letter carefully and discovered that"}

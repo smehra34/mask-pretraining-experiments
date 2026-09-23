@@ -1,0 +1,92 @@
+schema_version: 1
+
+backend:
+  megatron_path: /users/smehra/developer/Megatron-LM
+  lm_eval_source: /users/smehra/developer/lm-eval-v0.4.12
+  output_root: /capstor/scratch/cscs/smehra/megatron-runs/evaluations
+  account: infra01
+  partition: preemptable
+  nodes: 1
+  gpus_per_node: 1
+  tensor_model_parallel_size: 1
+  expert_model_parallel_size: 1
+  run_time: 00:05:00
+  container_edf: test-env
+  timing_warmups: 3
+  timing_repetitions: 10
+
+suites:
+  speculative-tiny:
+    workload: /users/smehra/developer/mask-experiment-manager/evaluations/workloads/natural-continuations-tiny.jsonl
+    draft_depths: [1, 2, 3]
+    drafters_by_objective: &condition_drafters
+      ntp: [ar, mask]
+      masked: [ar, mask]
+      mtp: [ar, mtp]
+    max_new_tokens: 8
+    batch_sizes: [1]
+    seeds: [1234]
+    sampling_profiles:
+      greedy: {temperature: 0, top_k: 0, top_p: 1.0}
+      temperature_1: {temperature: 1.0, top_k: 0, top_p: 1.0}
+
+  speculative-smoke:
+    workload: /users/smehra/developer/mask-experiment-manager/evaluations/workloads/natural-continuations-smoke.jsonl
+    draft_depths: [1, 2, 3, 4, 6, 8]
+    drafters_by_objective: *condition_drafters
+    max_new_tokens: 32
+    batch_sizes: [1]
+    seeds: [1234]
+    sampling_profiles:
+      greedy: {temperature: 0, top_k: 0, top_p: 1.0}
+      temperature_1: {temperature: 1.0, top_k: 0, top_p: 1.0}
+
+  speculative-1p1b-final:
+    workload: /users/smehra/developer/mask-experiment-manager/evaluations/workloads/natural-continuations-smoke.jsonl
+    draft_depths: [1, 2, 3, 4, 6, 8]
+    drafters_by_objective: *condition_drafters
+    max_new_tokens: 128
+    # The current native reference adapter deliberately supports batch one.
+    batch_sizes: [1]
+    seeds: [1234]
+    sampling_profiles:
+      greedy: {temperature: 0, top_k: 0, top_p: 1.0}
+      temperature_1: {temperature: 1.0, top_k: 0, top_p: 1.0}
+
+  speculative-natural-v1:
+    workload: /users/smehra/developer/mask-experiment-manager/evaluations/workloads/speculative-natural-v1/all.jsonl
+    draft_depths: [1, 2, 3, 4, 6, 8]
+    drafters_by_objective: *condition_drafters
+    max_new_tokens: 128
+    batch_sizes: [1]
+    seeds: [1234]
+    backend_overrides:
+      # The reference path uses two block forwards but still recomputes full prefixes without KV caching.
+      run_time: 06:00:00
+    sampling_profiles:
+      greedy: {temperature: 0, top_k: 0, top_p: 1.0}
+      temperature_1: {temperature: 1.0, top_k: 0, top_p: 1.0}
+
+  speculative-dclm-pilot:
+    workload: /users/smehra/developer/mask-experiment-manager/evaluations/workloads/speculative-natural-v1/dclm-edu-validation.jsonl
+    draft_depths: [1, 2, 3]
+    drafters_by_objective: *condition_drafters
+    max_new_tokens: 8
+    batch_sizes: [1]
+    seeds: [1234]
+    backend_overrides:
+      run_time: 01:00:00
+    sampling_profiles:
+      greedy: {temperature: 0, top_k: 0, top_p: 1.0}
+      temperature_1: {temperature: 1.0, top_k: 0, top_p: 1.0}
+
+# Resolve each run/stage separately so every speculative condition is paired
+# with its own checkpoint's AR baseline. These selectors are labels; immutable
+# run-directory paths are supplied to plan/render commands.
+initial_matrix:
+  - {seed: 3407, objective: ntp, conditions: [ar, mask]}
+  - {seed: 3407, objective: mtp, conditions: [ar_mtp_disabled, recursive_mtp]}
+  - {seed: 3407, objective: variable_span, conditions: [ar, mask]}
+  - {seed: 67, objective: ntp, conditions: [ar, mask]}
+  - {seed: 67, objective: mtp, conditions: [ar_mtp_disabled, recursive_mtp]}
+  - {seed: 67, objective: variable_span, conditions: [ar, mask]}
