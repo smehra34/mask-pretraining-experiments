@@ -30,6 +30,86 @@ suites:
       greedy: {temperature: 0, top_k: 0, top_p: 1.0}
       temperature_1: {temperature: 1.0, top_k: 0, top_p: 1.0}
 
+  # Mask-only cached-generation smoke for checkpoints whose tokenizer/training
+  # metadata exposes the configured mask token.
+  speculative-tiny-cached-mask:
+    analysis_mode: cached_generation
+    workload: /users/smehra/developer/mask-experiment-manager/evaluations/workloads/natural-continuations-tiny.jsonl
+    draft_depths: [1, 2, 3]
+    drafters: [ar, mask]
+    max_new_tokens: 8
+    batch_sizes: [1]
+    seeds: [1234]
+    sampling_profiles:
+      greedy: {temperature: 0, top_k: 0, top_p: 1.0}
+      temperature_1: {temperature: 1.0, top_k: 0, top_p: 1.0}
+
+  # Compatibility suite name for the unified cached batch benchmark.
+  speculative-tiny-cache-benchmark:
+    analysis_mode: batch_timing_benchmark
+    workload: /users/smehra/developer/mask-experiment-manager/evaluations/workloads/speculative-natural-v1/dclm-edu-validation.jsonl
+    # Two frozen 256-token prompts are enough for a systems smoke while making
+    # the avoided full-prefix work visible. This is not an acceptance suite.
+    timing_max_prompts: 2
+    draft_depths: [1, 3]
+    drafters: [ar, mask]
+    max_new_tokens: 16
+    batch_sizes: [1, 2]
+    seeds: [1234]
+    timing_profiles: [greedy]
+    timing_warmups: 1
+    timing_repetitions: 3
+    backend_overrides:
+      run_time: 00:15:00
+    sampling_profiles:
+      greedy: {temperature: 0, top_k: 0, top_p: 1.0}
+      temperature_1: {temperature: 1.0, top_k: 0, top_p: 1.0}
+
+  # Unified cached AR/speculative timing as physical batch size changes.
+  speculative-tiny-batch-benchmark:
+    analysis_mode: batch_timing_benchmark
+    workload: /users/smehra/developer/mask-experiment-manager/evaluations/workloads/speculative-natural-v1/dclm-edu-validation.jsonl
+    timing_max_prompts: 2
+    draft_depths: [1, 3]
+    drafters_by_objective: *condition_drafters
+    max_new_tokens: 16
+    batch_sizes: [1, 2]
+    seeds: [1234]
+    timing_profiles: [greedy]
+    timing_warmups: 1
+    timing_repetitions: 3
+    backend_overrides:
+      run_time: 00:10:00
+    sampling_profiles:
+      greedy: {temperature: 0, top_k: 0, top_p: 1.0}
+      temperature_1: {temperature: 1.0, top_k: 0, top_p: 1.0}
+
+  speculative-tiny-batched:
+    analysis_mode: cached_generation
+    workload: /users/smehra/developer/mask-experiment-manager/evaluations/workloads/natural-continuations-tiny.jsonl
+    draft_depths: [1, 2, 3]
+    drafters_by_objective: *condition_drafters
+    max_new_tokens: 8
+    batch_sizes: [4]
+    seeds: [1234]
+    backend_overrides:
+      run_time: 00:10:00
+    sampling_profiles:
+      greedy: {temperature: 0, top_k: 0, top_p: 1.0}
+      temperature_1: {temperature: 1.0, top_k: 0, top_p: 1.0}
+
+  speculative-tiny-potential:
+    analysis_mode: draft_potential
+    workload: /users/smehra/developer/mask-experiment-manager/evaluations/workloads/natural-continuations-tiny.jsonl
+    draft_depths: [1, 2, 3]
+    drafters_by_objective: *condition_drafters
+    max_new_tokens: 1
+    batch_sizes: [4]
+    seeds: [1234]
+    sampling_profiles:
+      greedy: {temperature: 0, top_k: 0, top_p: 1.0}
+      temperature_1: {temperature: 1.0, top_k: 0, top_p: 1.0}
+
   speculative-smoke:
     workload: /users/smehra/developer/mask-experiment-manager/evaluations/workloads/natural-continuations-smoke.jsonl
     draft_depths: [1, 2, 3, 4, 6, 8]
@@ -42,11 +122,11 @@ suites:
       temperature_1: {temperature: 1.0, top_k: 0, top_p: 1.0}
 
   speculative-1p1b-final:
+    analysis_mode: cached_generation
     workload: /users/smehra/developer/mask-experiment-manager/evaluations/workloads/natural-continuations-smoke.jsonl
     draft_depths: [1, 2, 3, 4, 6, 8]
     drafters_by_objective: *condition_drafters
     max_new_tokens: 128
-    # The current native reference adapter deliberately supports batch one.
     batch_sizes: [1]
     seeds: [1234]
     sampling_profiles:
@@ -54,6 +134,7 @@ suites:
       temperature_1: {temperature: 1.0, top_k: 0, top_p: 1.0}
 
   speculative-natural-v1:
+    analysis_mode: cached_generation
     workload: /users/smehra/developer/mask-experiment-manager/evaluations/workloads/speculative-natural-v1/all.jsonl
     draft_depths: [1, 2, 3, 4, 6, 8]
     drafters_by_objective: *condition_drafters
@@ -61,8 +142,41 @@ suites:
     batch_sizes: [1]
     seeds: [1234]
     backend_overrides:
-      # The reference path uses two block forwards but still recomputes full prefixes without KV caching.
+      # Conservative legacy allocation; the cached path normally completes sooner.
       run_time: 06:00:00
+    sampling_profiles:
+      greedy: {temperature: 0, top_k: 0, top_p: 1.0}
+      temperature_1: {temperature: 1.0, top_k: 0, top_p: 1.0}
+
+  # High-throughput acceptance study. Each equal-length prompt batch executes
+  # only the maximum requested depth and derives the shallower fixed-prefix
+  # observations by exact tensor slicing. This is not a generation benchmark.
+  speculative-natural-v1-potential:
+    analysis_mode: draft_potential
+    workload: /users/smehra/developer/mask-experiment-manager/evaluations/workloads/speculative-natural-v1/all.jsonl
+    draft_depths: [1, 2, 3, 4, 6, 8]
+    drafters_by_objective: *condition_drafters
+    max_new_tokens: 1
+    batch_sizes: [8]
+    seeds: [1234]
+    backend_overrides:
+      run_time: 01:00:00
+    sampling_profiles:
+      greedy: {temperature: 0, top_k: 0, top_p: 1.0}
+      temperature_1: {temperature: 1.0, top_k: 0, top_p: 1.0}
+
+  # Complete, independent continuations with dynamic regrouping by exact
+  # causal length. Unlike draft_potential, every depth retains its own path.
+  speculative-natural-v1-batched:
+    analysis_mode: cached_generation
+    workload: /users/smehra/developer/mask-experiment-manager/evaluations/workloads/speculative-natural-v1/all.jsonl
+    draft_depths: [1, 2, 3, 4, 6, 8]
+    drafters_by_objective: *condition_drafters
+    max_new_tokens: 128
+    batch_sizes: [8]
+    seeds: [1234]
+    backend_overrides:
+      run_time: 02:00:00
     sampling_profiles:
       greedy: {temperature: 0, top_k: 0, top_p: 1.0}
       temperature_1: {temperature: 1.0, top_k: 0, top_p: 1.0}

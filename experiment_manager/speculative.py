@@ -99,6 +99,28 @@ def resolve_speculative(
         suite["drafters"] = list(drafters_by_objective[objective])
     if "ar" not in suite.get("drafters", []):
         raise ValueError("every suite must include the checkpoint's own AR baseline")
+    analysis_mode = suite.get("analysis_mode", "cached_generation")
+    if analysis_mode not in {
+        "cached_generation",
+        "draft_potential",
+        "batch_timing_benchmark",
+    }:
+        raise ValueError(
+            "analysis_mode must be cached_generation, draft_potential, "
+            "or batch_timing_benchmark"
+        )
+    batch_sizes = [int(value) for value in suite.get("batch_sizes", [1])]
+    if not batch_sizes or any(value < 1 for value in batch_sizes):
+        raise ValueError("batch_sizes must contain positive integers")
+    if analysis_mode in {
+        "cached_generation",
+        "draft_potential",
+    } and len(batch_sizes) != 1:
+        raise ValueError("batched analysis modes accept one batch size per frozen suite")
+    if analysis_mode == "batch_timing_benchmark":
+        non_ar = set(suite.get("drafters", [])) - {"ar"}
+        if "ar" not in suite.get("drafters", []) or len(non_ar) != 1:
+            raise ValueError("batch timing requires ar plus exactly one drafter")
     depths = suite.get("draft_depths", [1, 2, 3, 4, 6, 8])
     invalid_depths = any(value not in (1, 2, 3, 4, 6, 8) for value in depths)
     if sorted(set(depths)) != sorted(depths) or invalid_depths:

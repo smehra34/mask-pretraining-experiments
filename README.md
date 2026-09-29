@@ -371,8 +371,8 @@ After preparation, plan the suite without writing or submitting:
   --stage main --step latest --suite speculative-natural-v1
 ```
 
-The suite keeps overall and per-domain aggregates. Its six-hour request reflects the deliberately sequential,
-correctness-first verifier over 1,000 prompts and is not a production-speed benchmark. Results are appended
+The suite keeps overall and per-domain aggregates. Its wall-time request is an allocation limit for the
+native cached reference engine over 1,000 prompts, not a production-speed claim. Results are appended
 durably after every completed prompt/profile unit, while aggregate JSON and Markdown reports are refreshed
 atomically at regular intervals. Render the immutable record once, then use the same idempotent submission
 command both for its first run and for any manual restart:
@@ -393,6 +393,27 @@ commands.
 The per-record `progress_speculative_*.json` sidecar reports completed and expected prompt units and records.
 The append-only `samples_speculative_*.jsonl` file is the source of truth used to rebuild partial or final
 reports after interruption.
+
+Two faster suites retain the same workload and scientific definitions:
+
+```bash
+# Complete continuations with left-padded physical batches and row-specific
+# logical lengths over one target KV cache per batch.
+/usr/bin/python3.11 mask_exp.py plan-speculative RUN_DIRECTORY \
+  --stage main --step latest --suite speculative-natural-v1-batched
+
+# Acceptance-only fixed-prefix study. One maximum-depth batched proposal and
+# verification is reused exactly for all requested shallower depths.
+/usr/bin/python3.11 mask_exp.py plan-speculative RUN_DIRECTORY \
+  --stage main --step latest --suite speculative-natural-v1-potential
+```
+
+Both modes use deterministic per-prompt RNG streams, so batch packing does not change stochastic results.
+The potential suite also shards prompts across data-parallel replicas and merges their resumable JSONL files.
+It measures proposal quality at the clean workload prefixes and must not be interpreted as complete-generation
+throughput. The batched generation suite preserves each complete continuation separately, prefills once, and
+uses the same append-only target-cache scheduler for AR, mask, and MTP conditions. Its timings describe this
+reference implementation and must not be presented as production-engine speedups.
 
 ## Defining experiments
 

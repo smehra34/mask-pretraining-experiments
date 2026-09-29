@@ -151,6 +151,70 @@ class SpeculativePlanTests(unittest.TestCase):
             self.assertEqual(jobs["submissions"][1]["action"], "resume")
             self.assertEqual(jobs["submissions"][1]["command"], resume_command)
 
+    def test_optimized_modes_are_frozen_and_invalid_cache_matrix_is_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            run, config = self._fixture(root)
+            raw = yaml.safe_load(config.read_text())
+            suite = raw["suites"]["smoke"]
+            suite["analysis_mode"] = "draft_potential"
+            suite["batch_sizes"] = [8]
+            config.write_text(yaml.safe_dump(raw))
+            analysis = resolve_speculative(
+                run,
+                stage_key="main",
+                checkpoint_step=7,
+                suite_name="smoke",
+                config_path=config,
+                require_checkpoint=False,
+            )
+            self.assertEqual(analysis.config["suite"]["analysis_mode"], "draft_potential")
+            self.assertEqual(analysis.config["suite"]["batch_sizes"], [8])
+
+            raw["suites"]["smoke"]["analysis_mode"] = "unknown_generation_mode"
+            config.write_text(yaml.safe_dump(raw))
+            with self.assertRaisesRegex(ValueError, "analysis_mode must be"):
+                resolve_speculative(
+                    run,
+                    stage_key="main",
+                    checkpoint_step=7,
+                    suite_name="smoke",
+                    config_path=config,
+                    require_checkpoint=False,
+                )
+
+    def test_batch_timing_mode_accepts_mask_and_validates_batches(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            run, config = self._fixture(root)
+            raw = yaml.safe_load(config.read_text())
+            suite = raw["suites"]["smoke"]
+            suite["analysis_mode"] = "batch_timing_benchmark"
+            suite["drafters"] = ["ar", "mask"]
+            suite["batch_sizes"] = [1, 2]
+            config.write_text(yaml.safe_dump(raw))
+            analysis = resolve_speculative(
+                run,
+                stage_key="main",
+                checkpoint_step=7,
+                suite_name="smoke",
+                config_path=config,
+                require_checkpoint=False,
+            )
+            self.assertEqual(analysis.config["suite"]["analysis_mode"], "batch_timing_benchmark")
+
+            raw["suites"]["smoke"]["batch_sizes"] = [0]
+            config.write_text(yaml.safe_dump(raw))
+            with self.assertRaisesRegex(ValueError, "positive integers"):
+                resolve_speculative(
+                    run,
+                    stage_key="main",
+                    checkpoint_step=7,
+                    suite_name="smoke",
+                    config_path=config,
+                    require_checkpoint=False,
+                )
+
 
 if __name__ == "__main__":
     unittest.main()
