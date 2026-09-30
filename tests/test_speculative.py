@@ -215,6 +215,33 @@ class SpeculativePlanTests(unittest.TestCase):
                     require_checkpoint=False,
                 )
 
+    def test_dynamic_cache_is_default_and_invalid_backend_is_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            run, config = self._fixture(root)
+            analysis = resolve_speculative(
+                run,
+                stage_key="main",
+                checkpoint_step=7,
+                suite_name="smoke",
+                config_path=config,
+                require_checkpoint=False,
+            )
+            self.assertEqual(analysis.config["suite"]["cache_backend"], "dynamic")
+
+            raw = yaml.safe_load(config.read_text())
+            raw["suites"]["smoke"]["cache_backend"] = "unknown"
+            config.write_text(yaml.safe_dump(raw))
+            with self.assertRaisesRegex(ValueError, "cache_backend"):
+                resolve_speculative(
+                    run,
+                    stage_key="main",
+                    checkpoint_step=7,
+                    suite_name="smoke",
+                    config_path=config,
+                    require_checkpoint=False,
+                )
+
 
 if __name__ == "__main__":
     unittest.main()

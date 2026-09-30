@@ -84,6 +84,33 @@ suites:
       greedy: {temperature: 0, top_k: 0, top_p: 1.0}
       temperature_1: {temperature: 1.0, top_k: 0, top_p: 1.0}
 
+  # Paired correctness and systems benchmark for the compacting static cache
+  # and the paged dynamic cache. Run both suite variants on the same checkpoint,
+  # then compare their aggregates with tools/compare_speculative_cache_benchmarks.py.
+  # Eight prompts make every requested physical batch size exact (no short tail).
+  speculative-cache-compare-dynamic: &cache_compare
+    analysis_mode: batch_timing_benchmark
+    workload: /users/smehra/developer/mask-experiment-manager/evaluations/workloads/speculative-natural-v1/dclm-edu-validation.jsonl
+    timing_max_prompts: 8
+    draft_depths: [1, 3]
+    drafters_by_objective: *condition_drafters
+    max_new_tokens: 32
+    batch_sizes: [1, 2, 4, 8]
+    seeds: [1234]
+    timing_profiles: [greedy, temperature_1]
+    timing_warmups: 2
+    timing_repetitions: 5
+    cache_backend: dynamic
+    backend_overrides:
+      run_time: 00:30:00
+    sampling_profiles:
+      greedy: {temperature: 0, top_k: 0, top_p: 1.0}
+      temperature_1: {temperature: 1.0, top_k: 0, top_p: 1.0}
+
+  speculative-cache-compare-static:
+    <<: *cache_compare
+    cache_backend: static
+
   speculative-tiny-batched:
     analysis_mode: cached_generation
     workload: /users/smehra/developer/mask-experiment-manager/evaluations/workloads/natural-continuations-tiny.jsonl

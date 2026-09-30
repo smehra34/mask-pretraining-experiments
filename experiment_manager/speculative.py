@@ -109,6 +109,10 @@ def resolve_speculative(
             "analysis_mode must be cached_generation, draft_potential, "
             "or batch_timing_benchmark"
         )
+    cache_backend = suite.get("cache_backend", "dynamic")
+    if cache_backend not in {"dynamic", "static"}:
+        raise ValueError("cache_backend must be dynamic or static")
+    suite["cache_backend"] = cache_backend
     batch_sizes = [int(value) for value in suite.get("batch_sizes", [1])]
     if not batch_sizes or any(value < 1 for value in batch_sizes):
         raise ValueError("batch_sizes must contain positive integers")
